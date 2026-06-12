@@ -37,11 +37,16 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # robot(s)
     robot_cfg: ArticulationCfg = CHICKEN_CFG.replace(prim_path="/World/envs/env_.*/Robot")
     
-    pos_range = [65 * math.pi / 180, 220 * math.pi / 180, 200 * math.pi / 180, 180 * math.pi / 180]
+    pos_range = [40, 120, 120, 120]
+    pos_range = [x * math.pi / 180.0 for x in pos_range]
     
     imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken/body")
 
     # scene
-    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4, env_spacing=1.5, replicate_physics=True)
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=900, env_spacing=1.5, replicate_physics=True)
+    # 9 envs if playing, otherwise 4096
+    
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=900, env_spacing=1.5, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1024, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)
