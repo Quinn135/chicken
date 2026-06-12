@@ -25,8 +25,8 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     
     # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
     # imu
-    history_length = 5
-    observation_space = (6 + 6 * 2 + 3 + 3) + action_space * history_length # remember actions
+    history_length = 10
+    observation_space = (6 + 6 * 2 + 3 + 3 + 4) + 6 * 2 * history_length # remember actions
     
     state_space = 0
 
@@ -42,4 +42,5 @@ class ChickenEnvCfg(DirectRLEnvCfg):
 
     # scene
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4, env_spacing=1.5, replicate_physics=True)
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=400, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)

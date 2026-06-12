@@ -15,7 +15,7 @@ models:
     network:
       - name: net
         input: OBSERVATIONS
-        layers: [180, 180, 80]
+        layers: [256, 180, 80]
         activations: elu
     output: ACTIONS
   value:  # see deterministic_model parameters
@@ -24,7 +24,7 @@ models:
     network:
       - name: net
         input: OBSERVATIONS
-        layers: [180, 180, 80]
+        layers: [256, 180, 80]
         activations: elu
     output: ONE
 
@@ -40,12 +40,12 @@ memory:
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html
 agent:
   class: PPO
-  rollouts: 48
+  rollouts: 32
   learning_epochs: 8
   mini_batches: 8
-  discount_factor: 0.8
+  discount_factor: 0.975
   gae_lambda: 0.95
-  time_limit_bootstrap: True
+  # time_limit_bootstrap: True
   learning_rate: 5.0e-04
   learning_rate_scheduler: KLAdaptiveLR
   learning_rate_scheduler_kwargs:
@@ -60,16 +60,16 @@ agent:
   ratio_clip: 0.2
   value_clip: 0.2
   # clip_predicted_values: True
-  entropy_loss_scale: 0.0005
+  entropy_loss_scale: 0.0001
   value_loss_scale: 2.0
   kl_threshold: 0.0
   rewards_shaper_scale: 0.1
   time_limit_bootstrap: False
   # logging and checkpoint
   experiment:
-    directory: "chicken"
+    directory: "chicken2"
     experiment_name: ""
-    write_interval: auto
+    write_interval: 2500
     checkpoint_interval: auto
 
 
@@ -77,5 +77,6 @@ agent:
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
   class: SequentialTrainer
+  # timesteps: 10000
   timesteps: 10000
   environment_info: log
