@@ -18,14 +18,15 @@ import math
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 1
-    episode_length_s = 5.0
+    decimation = 2
+    episode_length_s = 12.5
     # - spaces definition
     action_space = 6 # command 6 motor positions
     
     # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
     # imu
-    observation_space = 6 + 6 * 2 + 3 + 3
+    history_length = 5
+    observation_space = (6 + 6 * 2 + 3 + 3) + action_space * history_length # remember actions
     
     state_space = 0
 
@@ -40,4 +41,5 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken/body")
 
     # scene
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4, env_spacing=1.5, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)

@@ -20,8 +20,8 @@ CHICKEN_CFG = ArticulationCfg(
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=False,
-            solver_position_iteration_count=4,
-            solver_velocity_iteration_count=0,
+            solver_position_iteration_count=6,
+            solver_velocity_iteration_count=3,
             sleep_threshold=0.005,
             stabilization_threshold=0.001,
         ),
@@ -33,8 +33,8 @@ CHICKEN_CFG = ArticulationCfg(
         "motor_actuator": ImplicitActuatorCfg(
             joint_names_expr=["l0", "l1", "l2", "r0", "r1", "r2"],
             effort_limit_sim=1500.0,
-            stiffness=110.0,
-            damping=5.0,
+            stiffness=100.0,
+            damping=20.0,
         ),
     },
 )
