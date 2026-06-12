@@ -13,7 +13,7 @@ from . import agents
 
 
 gym.register(
-    id="Template-Chicken-Direct-v0",
+    id="Isaac-Chicken-Robot-v0",
     entry_point=f"{__name__}.chicken_env:ChickenEnv",
     disable_env_checker=True,
     kwargs={
