@@ -42,12 +42,12 @@ memory:
 # https://skrl.readthedocs.io/en/latest/api/agents/ppo.html
 agent:
   class: PPO
-  rollouts: 24
-  learning_epochs: 16
-  mini_batches: 12
-  discount_factor: 0.99
+  rollouts: 32
+  learning_epochs: 8
+  mini_batches: 8
+  discount_factor: 0.95
   gae_lambda: 0.95
-  # time_limit_bootstrap: True
+  time_limit_bootstrap: True
   learning_rate: 5.0e-04
   learning_rate_scheduler: KLAdaptiveLR
   learning_rate_scheduler_kwargs:
@@ -62,16 +62,16 @@ agent:
   ratio_clip: 0.2
   value_clip: 0.2
   # clip_predicted_values: True
-  entropy_loss_scale: 0.001
+  entropy_loss_scale: 0.0
   value_loss_scale: 2.0
   kl_threshold: 0.0
   rewards_shaper_scale: 0.1
-  time_limit_bootstrap: True
+  # time_limit_bootstrap: True
   # logging and checkpoint
   experiment:
     directory: "chicken2"
     experiment_name: ""
-    write_interval: auto
+    write_interval: 100
     checkpoint_interval: auto
 
 
@@ -80,5 +80,5 @@ agent:
 trainer:
   class: SequentialTrainer
   # timesteps: 10000
-  timesteps: 100000
+  timesteps: 20000
   environment_info: log

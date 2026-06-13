@@ -29,14 +29,15 @@ CHICKEN_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.0), joint_pos={"lr": 0.0, "l0": 0.0, "l1": 0.0, "l2": 0.0, "rr": 0.0, "r0": 0.0, "r1": 0.0, "r2": 0.0}
+        pos=(0.0, 0.0, 0.2),
+        joint_pos={"lr": 0.0, "l0": 0.0, "l1": 0.0, "l2": 0.0, "rr": 0.0, "r0": 0.0, "r1": 0.0, "r2": 0.0},
     ),
     actuators={
         "motor_actuator": ImplicitActuatorCfg(
             joint_names_expr=["lr", "l0", "l1", "l2", "rr", "r0", "r1", "r2"],
-            effort_limit_sim=5000.0,
-            stiffness=400.0,
-            damping=2.0,
+            effort_limit_sim=200.0,
+            stiffness=100.0,
+            damping=5.0,
         ),
     },
 )
