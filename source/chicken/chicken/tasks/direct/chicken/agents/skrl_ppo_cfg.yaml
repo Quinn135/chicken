@@ -1,4 +1,4 @@
-seed: 42
+seed: 69420
 
 
 # Models are instantiated using skrl's model instantiator utility
@@ -15,7 +15,7 @@ models:
     network:
       - name: net
         input: OBSERVATIONS
-        layers: [128, 128]
+        layers: [256, 128, 64]
         activations: elu
     output: ACTIONS
   value:  # see deterministic_model parameters
@@ -26,7 +26,7 @@ models:
     network:
       - name: net
         input: OBSERVATIONS
-        layers: [128, 128]
+        layers: [256, 128, 64]
         activations: elu
     output: ONE
 
@@ -45,7 +45,7 @@ agent:
   rollouts: 32
   learning_epochs: 8
   mini_batches: 8
-  discount_factor: 0.95
+  discount_factor: 0.98
   gae_lambda: 0.95
   time_limit_bootstrap: True
   learning_rate: 5.0e-04
@@ -57,13 +57,13 @@ agent:
   value_preprocessor: RunningStandardScaler
   value_preprocessor_kwargs: null
   random_timesteps: 0
-  learning_starts: 0
+  learning_starts: 1500
   grad_norm_clip: 1.0
   ratio_clip: 0.2
   value_clip: 0.2
   # clip_predicted_values: True
   entropy_loss_scale: 0.0
-  value_loss_scale: 2.0
+  value_loss_scale: 1.0
   kl_threshold: 0.0
   rewards_shaper_scale: 0.1
   # time_limit_bootstrap: True
@@ -71,7 +71,7 @@ agent:
   experiment:
     directory: "chicken2"
     experiment_name: ""
-    write_interval: 100
+    write_interval: auto
     checkpoint_interval: auto
 
 
@@ -80,5 +80,5 @@ agent:
 trainer:
   class: SequentialTrainer
   # timesteps: 10000
-  timesteps: 20000
+  timesteps: 1100000
   environment_info: log

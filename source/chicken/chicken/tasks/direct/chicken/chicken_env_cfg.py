@@ -18,7 +18,7 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 2
+    decimation = 3
     episode_length_s = 15
     # - spaces definition
     action_space = 8  # command 8 motor positions
@@ -47,5 +47,5 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=900, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1024, env_spacing=1.5, replicate_physics=True)
-    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=1.5, replicate_physics=True)
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)

@@ -5,17 +5,16 @@
 
 from __future__ import annotations
 
-import math
-import torch
 from collections.abc import Sequence
+
+import torch
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import Articulation
-from isaaclab.sensors import Imu
 from isaaclab.envs import DirectRLEnv
+from isaaclab.sensors import Imu
 from isaaclab.sim.spawners.from_files import GroundPlaneCfg, spawn_ground_plane
-from isaaclab.utils.math import quat_apply_inverse
-from isaaclab.utils.math import sample_uniform
+from isaaclab.utils.math import quat_apply_inverse, sample_uniform
 
 from .chicken_env_cfg import ChickenEnvCfg
 
@@ -54,7 +53,7 @@ class ChickenEnv(DirectRLEnv):
 
         # self.pos = torch.zeros((self.num_envs, 3), device=self.device)
         # get pos of the "body" element (_body_idxs)
-        self.current_pos = self.robot.data.body_pos_w[:, self._body_idxs, :].squeeze(1)
+        self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.last_pos = torch.zeros_like(self.current_pos)
 
         # self.last_actions = torch.zeros((self.num_envs, self.cfg.history_length, 6 * 2), device=self.device)
@@ -89,22 +88,32 @@ class ChickenEnv(DirectRLEnv):
         forces = torch.zeros((self.num_envs, 1, 3), device=self.device)
         torques = torch.zeros_like(forces)
 
-        force_interval = 60 * 3
-        push_envs = (self.episode_length_buf + 1) % force_interval == 0
+        # force_interval = 60 * 3
+        # push_envs = (self.episode_length_buf + 1) % force_interval == 0
 
-        max_force = 5.0
-        forces[push_envs] = sample_uniform(-max_force, max_force, forces[push_envs].shape, device=self.device)
+        # 1/400 chance to push
+        push_envs = torch.rand(self.num_envs, device=self.device) < 1.0 / 400.0
 
-        self.robot.set_external_force_and_torque(forces, torques)
-        self.robot.write_data_to_sim()
+        if push_envs.any():
+            max_force = 10.0
+            forces[push_envs] = sample_uniform(-max_force, max_force, forces[push_envs].shape, device=self.device)
+
+            self.robot.instantaneous_wrench_composer.set_forces_and_torques(
+                forces=forces, torques=torques, body_ids=self._body_idxs
+            )
+        # self.robot.write_data_to_sim()
 
     def _apply_action(self) -> None:
         # apply joint actions
         for i, dof_idx in enumerate(self._l_joint_dof_idxs):
             # times the range of each joint
-            self.robot.set_joint_position_target((self.actions[:, i]).unsqueeze(dim=1), joint_ids=dof_idx)
+            self.robot.set_joint_position_target(
+                (self.actions[:, i] * self.pos_range[i]).unsqueeze(dim=1), joint_ids=dof_idx
+            )
         for i, dof_idx in enumerate(self._r_joint_dof_idxs):
-            self.robot.set_joint_position_target((self.actions[:, i + 4]).unsqueeze(dim=1), joint_ids=dof_idx)
+            self.robot.set_joint_position_target(
+                (self.actions[:, i + 4] * self.pos_range[i]).unsqueeze(dim=1), joint_ids=dof_idx
+            )
 
         # ones_to_update = self.episode_length_buf % 5 == 0
 
@@ -121,13 +130,16 @@ class ChickenEnv(DirectRLEnv):
             start_dim=-2
         )  # just flatten the last two dims
 
-    def _get_info(self) -> dict:
-        dt = self.cfg.sim.dt * self.cfg.decimation
+    # def _get_info(self) -> dict:
+    #     dt = self.cfg.sim.dt * self.cfg.decimation
 
-        return {
-            "x_vel": (self.current_pos[:, 0] - self.last_pos[:, 0]) / dt,
-            "y_vel": (self.current_pos[:, 1] - self.last_pos[:, 1]) / dt,
-        }
+    #     return {
+    #         "log": {
+    #             "chicken/mean_x_vel": torch.mean((self.current_pos[:, 0] - self.last_pos[:, 0]) / dt).item(),
+    #             "chicken/mean_y_vel": torch.mean((self.current_pos[:, 1] - self.last_pos[:, 1]) / dt).item(),
+    #             "chicken/mean_z_vel": torch.mean((self.current_pos[:, 2] - self.last_pos[:, 2]) / dt).item(),
+    #         },
+    #     }
 
     def _get_observations(self) -> dict:
         # obs: motor vel, motor rot
@@ -158,6 +170,9 @@ class ChickenEnv(DirectRLEnv):
             dim=-1,
         )
 
+        obs = torch.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0)
+        obs = torch.clamp(obs, min=-100.0, max=100.0)
+
         observations = {"policy": obs}
         return observations
 
@@ -165,60 +180,72 @@ class ChickenEnv(DirectRLEnv):
         self.current_pos = self.robot.data.body_pos_w[:, self._body_idxs, :].squeeze(1)
 
         # total_reward = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
-        alive_award = torch.ones(self.num_envs, dtype=torch.float32, device=self.device) * 40.0
-
-        # total_reward += (below_threshold | titled_too_much).float() * -20.0
-        # out_of_bounds, _ = self._get_dones()
-        # total_reward += out_of_bounds.float() * -10.0
-
-        # total_reward += torch.clamp(
-        #     (torch.sum(-torch.sum(torch.abs(self.joint_vel[:, self._l_joint_dof_idxs]), dim=-1)
-        #                            - torch.sum(torch.abs(self.joint_vel[:, self._r_joint_dof_idxs]), dim=-1), dim=-1)
-        #                  ) * 1.0,
-        #     min=-10.0,
-        #     max=0.0
-        # )
+        alive_award = torch.ones(self.num_envs, dtype=torch.float32, device=self.device) * 100.0
 
         # disincentivize large actions w/ self.joint_vel
-        large_actions = -torch.clamp(torch.sum(torch.square(self.joint_vel), dim=-1) * 0.25, min=0.0, max=10.0)
+        large_actions = -torch.sum(torch.pow(torch.abs(self.joint_vel), 0.5), dim=-1) * 0.1
+        large_actions = torch.nan_to_num(large_actions, nan=0.0, posinf=0.0, neginf=0.0)
+        large_actions = torch.clamp(large_actions, min=-20.0, max=20.0)
 
         # reward it being close to target height
         body_pos_z = self.current_pos[:, 2]  # Use current_pos
         target_height = 0.25
-        close_to_target = -torch.clamp(torch.abs(body_pos_z - target_height) * 20.0, min=0.0, max=10.0)
+        close_to_target = -torch.abs(body_pos_z - target_height) * 25.0
 
         # reward uprightedness
         body_quats = self.robot.data.body_quat_w[:, self._body_idxs, :].flatten(start_dim=-2)
         gravity_local = quat_apply_inverse(
             body_quats, torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1)
         )
-        uprightedness = torch.clamp(
-            torch.pow(-gravity_local[:, 2], 4) * 10.0 * torch.sign(-gravity_local[:, 2]), min=-10.0, max=10.0
-        )
+        uprightedness = torch.pow(-gravity_local[:, 2], 4) * 10.0 * torch.sign(-gravity_local[:, 2])
 
         # # motivate walking!
-        # dt = self.cfg.sim.dt * self.cfg.decimation
-        # target_vel = -0.25  # m/s
-        # current_vel_x = (current_pos[:, 0] - self.last_pos[:, 0]) / dt
-        # vel_reward = current_vel_x / target_vel
-        # # cap reward to 1
-        # total_reward += torch.clamp(vel_reward, max=1.0) * 2.0
+        dt = self.cfg.sim.dt * self.cfg.decimation
+        target_vel = -0.1  # m/s
+        target_dist = target_vel * self.episode_length_buf * dt
+        current_dist_x = self.current_pos[:, 0] - self.robot.data.default_root_state[:, 0]
+        x_reward = -torch.abs(current_dist_x - target_dist) * 5.0
+        # current_vel_x = (self.current_pos[:, 0] - self.last_pos[:, 0]) / dt
+        # vel_reward = -torch.abs(current_vel_x - target_vel) * 5.0
 
         # disincentivize movement
-        movement = -torch.clamp(torch.sum(torch.abs(self.lin_vel_w), dim=-1) * 20.0, min=0.0, max=10.0)
+        # movement = -torch.clamp(torch.sum(torch.abs(self.lin_vel_w), dim=-1) * 20.0, min=0.0, max=10.0)
 
-        # # say sideways is bad!
-        # current_vel_y = (current_pos[:, 1] - self.last_pos[:, 1]) / dt
-        # total_reward -= torch.abs(current_vel_y / target_vel) * 0.5
+        # incentivize joints_pos being close to default
+        joints_close_to_0 = -torch.sum(torch.abs(self.joint_pos), dim=-1) * 0.5
+
+        # say sideways is bad!
+        # current pos - default
+        current_dist_y = self.current_pos[:, 1] - self.robot.data.default_root_state[:, 1] * 5.0
+        # current_vel_y = (self.current_pos[:, 1] - self.last_pos[:, 1]) / dt
+        # vel_y_penalty = torch.abs(current_vel_y) * 2.5
+
+        # rotating bad
+        ang_vel = -torch.sum(self.ang_vel_b, dim=-1) * 5
 
         # total_reward -= torch.sum(torch.square(self.lin_vel_w), dim=-1) * 1
-        # total_reward -= torch.sum(torch.square(self.ang_vel_b), dim=-1) * 1
         # total_reward -= torch.sum(torch.abs(self.joint_pos), dim=-1) * 0.3
 
         # print the components of the reward as a list
-        reward_components = [alive_award, large_actions, close_to_target, uprightedness, movement]
-        # if self.episode_length_buf[0] % 500 == 0:
-        #     print([torch.mean(r).item() for r in reward_components])
+        raw_components = [
+            alive_award,
+            large_actions,
+            close_to_target,
+            uprightedness,
+            x_reward,
+            current_dist_y,
+            joints_close_to_0,
+            ang_vel,
+        ]
+
+        # clamp rewards to between -15 and 15
+        safe_components = [torch.nan_to_num(r, nan=0.0, posinf=0.0, neginf=0.0) for r in raw_components]
+        safe_components = [torch.clamp(r, min=-100.0, max=100.0) for r in safe_components]
+
+        out_of_bounds, _ = self._get_dones()
+        reward_components = [torch.where(out_of_bounds, torch.zeros_like(r), r) for r in safe_components]
+
+        # print([torch.mean(r).item() for r in reward_components])
 
         total_reward = torch.sum(torch.stack(reward_components), dim=0)
 
@@ -232,7 +259,7 @@ class ChickenEnv(DirectRLEnv):
 
         body_pos_z = self.current_pos[:, 2]  # Use current_pos
         # print(torch.mean(body_pos_z).item())
-        threshold = 0.17
+        threshold = 0.14
         below_threshold = body_pos_z < threshold
 
         # print num below threshold
@@ -242,17 +269,16 @@ class ChickenEnv(DirectRLEnv):
         gravity_local = quat_apply_inverse(
             body_quats, torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1)
         )
-        titled_too_much = gravity_local[:, 2] > -0.7
+        titled_too_much = gravity_local[:, 2] > -0.3
 
         # prevent too fast, flying away etc
         dt = self.cfg.sim.dt * self.cfg.decimation
-        lin_vel_w = (self.current_pos[:, 0] - self.last_pos[:, 0]) / dt
-        too_fast = torch.any(torch.abs(lin_vel_w) > 10.0, dim=-1)
+        lin_vel_w = (self.current_pos - self.last_pos) / dt
+        # pythagorean theorem
+        too_fast = torch.norm(lin_vel_w, dim=-1) > 15.0
 
         # too high
-        too_high = body_pos_z > 1.0
-
-        too_high = torch.abs(body_pos_z) > 0.5
+        too_high = torch.abs(body_pos_z) > 0.8
 
         out_of_bounds = titled_too_much | too_fast | too_high | below_threshold
         # out_of_bounds = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
