@@ -181,7 +181,6 @@ class ChickenEnv(DirectRLEnv):
     def _get_rewards(self) -> torch.Tensor:
         # use e^(-x^2) for rewards
         # use -abs and -square for penalties
-
         self.current_pos = self.robot.data.body_pos_w[:, self._body_idxs, :].squeeze(1)
 
         # total_reward = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
