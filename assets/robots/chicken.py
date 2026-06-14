@@ -30,7 +30,16 @@ CHICKEN_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.22),
-        joint_pos={"lr": 0.0, "l0": 0.0, "l1": 0.0, "l2": 0.0, "rr": 0.0, "r0": 0.0, "r1": 0.0, "r2": 0.0},
+        joint_pos={
+            "lr": 0.0,
+            "l0": 8.969 * math.pi / 180.0,
+            "l1": -18.869 * math.pi / 180.0,
+            "l2": -9.901 * math.pi / 180.0,
+            "rr": 0.0,
+            "r0": -8.969 * math.pi / 180.0,
+            "r1": 18.869 * math.pi / 180.0,
+            "r2": 9.901 * math.pi / 180.0,
+        },
     ),
     actuators={
         "motor_actuator": ImplicitActuatorCfg(

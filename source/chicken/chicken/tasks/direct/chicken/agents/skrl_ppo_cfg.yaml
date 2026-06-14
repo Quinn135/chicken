@@ -57,12 +57,12 @@ agent:
   value_preprocessor: RunningStandardScaler
   value_preprocessor_kwargs: null
   random_timesteps: 0
-  learning_starts: 1500
+  learning_starts: 100
   grad_norm_clip: 1.0
   ratio_clip: 0.2
   value_clip: 0.2
   # clip_predicted_values: True
-  entropy_loss_scale: 0.0
+  entropy_loss_scale: 0.0001
   value_loss_scale: 1.0
   kl_threshold: 0.0
   rewards_shaper_scale: 0.1
@@ -79,6 +79,6 @@ agent:
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
   class: SequentialTrainer
-  # timesteps: 10000
-  timesteps: 1100000
+  timesteps: 30000
+  # timesteps: 1100000
   environment_info: log
