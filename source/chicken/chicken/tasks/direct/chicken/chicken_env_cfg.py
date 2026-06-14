@@ -16,12 +16,15 @@ from assets.robots.chicken import CHICKEN_CFG
 
 # python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0 --headless
 # python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 9
+# for vscode, python is at /isaac-sim/kit/python/bin/python3
+# if you want to clone, clone into /workspace/chicken or /workspace/wherever_you_want
+# and tensorboard command is tensorboard --logdir logs/skrl/chicken3 --bind_all or logs/skrl/wherever_is_in_yaml
 
 
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 4
+    decimation = 2
     episode_length_s = 30
     # - spaces definition
     action_space = 8  # command 8 motor positions
@@ -40,7 +43,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # robot(s)
     robot_cfg: ArticulationCfg = CHICKEN_CFG.replace(prim_path="/World/envs/env_.*/Robot")
 
-    pos_range = [50 * math.pi / 180.0, 120 * math.pi / 180.0, 120 * math.pi / 180.0, 90 * math.pi / 180.0]
+    pos_range = [50 * math.pi / 180.0, 120 * math.pi / 180.0, 120 * math.pi / 180.0, 40 * math.pi / 180.0]
 
     imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken/body")
 
@@ -50,6 +53,8 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=900, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1024, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=2304, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4096, env_spacing=1.5, replicate_physics=True)
+    # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=4900, env_spacing=1.5, replicate_physics=True)
     scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=8100, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=10000, env_spacing=1.5, replicate_physics=True)
