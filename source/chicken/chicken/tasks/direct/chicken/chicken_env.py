@@ -45,7 +45,7 @@ class ChickenEnv(DirectRLEnv):
         self.joint_pos = self.robot.data.joint_pos
         self.joint_vel = self.robot.data.joint_vel
 
-        self.target_compass = torch.zeros((self.num_envs, 1), device=self.device)
+        self.target_compass = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
         self.pos_range = self.cfg.pos_range
         self.all_pos_range = torch.tensor(self.pos_range + self.pos_range, device=self.device) / 2.0
@@ -60,6 +60,8 @@ class ChickenEnv(DirectRLEnv):
         # get pos of the "body" element (_body_idxs)
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.last_pos = torch.zeros_like(self.current_pos)
+
+        # self.reward_comps = torch.zeros((8), device=self.device)
 
         # self.last_actions = torch.zeros((self.num_envs, self.cfg.history_length, 8 * 2), device=self.device)
 
@@ -95,7 +97,7 @@ class ChickenEnv(DirectRLEnv):
         push_envs = torch.rand(self.num_envs, device=self.device) < 1.0 / 200.0
 
         if push_envs.any():
-            max_force = 50.0
+            max_force = 200.0
             forces[push_envs] = sample_uniform(-max_force, max_force, forces[push_envs].shape, device=self.device)
 
             self.robot.instantaneous_wrench_composer.set_forces_and_torques(
@@ -164,6 +166,7 @@ class ChickenEnv(DirectRLEnv):
                 self.lin_acc_b.unsqueeze(dim=1),
                 self.ang_acc_b.unsqueeze(dim=1),
                 self.compass.unsqueeze(dim=1),
+                self._sin_cos(self.target_compass).unsqueeze(dim=1),
                 # self.lin_vel_b.unsqueeze(dim=1),
                 # self.lin_vel_w.unsqueeze(dim=1),
                 # self.ang_vel_b.unsqueeze(dim=1),
@@ -181,26 +184,29 @@ class ChickenEnv(DirectRLEnv):
     def _get_rewards(self) -> torch.Tensor:
         # use e^(-x^2) for rewards
         # use -abs and -square for penalties
+        # currently, max is (11 + 1.4 =) 12.4 w/ 0 velocity
+        # and max w/ perfect velocity and all else is 61
+
         self.current_pos = self.robot.data.body_pos_w[:, self._body_idxs, :].squeeze(1)
 
         # total_reward = torch.zeros(self.num_envs, dtype=torch.float32, device=self.device)
-        alive_award = torch.ones(self.num_envs, dtype=torch.float32, device=self.device) * 10.0
+        alive_award = torch.ones(self.num_envs, dtype=torch.float32, device=self.device) * 1.0
 
         # disincentivize large vels w/ self.joint_vel
-        large_vels = -torch.sum(torch.pow(torch.abs(self.joint_vel), 0.5), dim=-1) * 0.04
+        large_vels = -torch.sum(torch.pow(torch.abs(self.joint_vel), 0.5), dim=-1) * 0.004
         large_vels = torch.nan_to_num(large_vels, nan=0.0, posinf=0.0, neginf=0.0)
         large_vels = torch.clamp(large_vels, min=-25.0, max=0.0)
 
-        large_actions = -torch.sum(torch.pow(torch.abs(self.actions), 2), dim=-1) * 10.0
+        large_actions = -torch.sum(torch.pow(torch.abs(self.actions), 2), dim=-1) * 0.075
         large_actions = torch.nan_to_num(large_actions, nan=0.0, posinf=0.0, neginf=0.0)
 
         # incentivize joints_pos being close to default
-        joints_close_to_0 = -torch.sum(torch.abs(self.joint_pos), dim=-1) * 0.05
+        # joints_close_to_0 = -torch.sum(torch.abs(self.joint_pos), dim=-1) * 0.0025
 
         # reward it being close to target height
         body_pos_z = self.current_pos[:, 2]  # Use current_pos
         target_height = 0.25
-        close_to_target = torch.exp(-torch.square(body_pos_z - target_height) * 25) * 15
+        close_to_target = torch.exp(-torch.square(body_pos_z - target_height) * 20) * 5
 
         # reward uprightedness
         body_quats = self.robot.data.body_quat_w[:, self._body_idxs, :].flatten(start_dim=-2)
@@ -208,7 +214,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats, torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1)
         )
         # uprightedness = torch.pow(-gravity_local[:, 2], 5) * 20.0 * torch.sign(-gravity_local[:, 2])
-        uprightedness = torch.pow(-gravity_local[:, 2], 5) * 20.0
+        uprightedness = torch.exp(-(-gravity_local[:, 2] + 1) * 5) * 5
 
         # # motivate walking!
         dt = self.cfg.sim.dt * self.cfg.decimation
@@ -216,14 +222,14 @@ class ChickenEnv(DirectRLEnv):
         current_vel_x = (self.current_pos[:, 0] - self.last_pos[:, 0]) / dt
         current_vel_y = (self.current_pos[:, 1] - self.last_pos[:, 1]) / dt
 
-        target_vel = -0.3  # m/s
+        target_vel = -0.2  # m/s
         target_vel_x = (target_vel * torch.cos(self.target_compass)).flatten(start_dim=-2)
         target_vel_y = (target_vel * torch.sin(self.target_compass)).flatten(start_dim=-2)
 
         vel_mean_square_error = torch.square(current_vel_x - target_vel_x) + torch.square(current_vel_y - target_vel_y)
         # Turns an error into a smooth reward.
         # The '5.0' is a tuning factor; higher means it has to be more precise to get points.
-        vel_reward = torch.exp(-vel_mean_square_error * 45.0) * 100.0
+        vel_reward = torch.exp(-vel_mean_square_error * 45.0) * 50.0
 
         # vel_reward_x = torch.exp(-torch.square(current_vel_x - target_vel_x) * 10) * 200
 
@@ -243,19 +249,19 @@ class ChickenEnv(DirectRLEnv):
         # print(feet_up.shape)
 
         # rotating bad
-        ang_vel = -torch.sum(torch.abs(self.ang_vel_b), dim=-1) * 10
+        # ang_vel = -torch.sum(torch.abs(self.ang_vel_b), dim=-1) * 20
 
         # print the components of the reward as a list
         raw_components = [
             alive_award,
             large_vels,
             large_actions,
+            # joints_close_to_0,
             close_to_target,
             uprightedness,
             vel_reward,
             # vertical_vel,
-            joints_close_to_0,
-            ang_vel,
+            # ang_vel,
             # feet_up,
         ]
 
@@ -269,8 +275,6 @@ class ChickenEnv(DirectRLEnv):
         # print([torch.mean(r).item() for r in reward_components])
 
         total_reward = torch.sum(torch.stack(reward_components), dim=0)
-
-        # total_reward = torch.clamp(total_reward, min=0.0)
 
         self.last_pos = self.current_pos.clone()
         return total_reward
@@ -330,11 +334,17 @@ class ChickenEnv(DirectRLEnv):
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
 
+        # self.target_compass[env_ids] = sample_uniform(
+        #     -20.0 * torch.pi / 180.0, 20.0 * torch.pi / 180.0, (len(env_ids), 1), device=self.device
+        # )
         self.target_compass[env_ids] = sample_uniform(-torch.pi, torch.pi, (len(env_ids), 1), device=self.device)
 
         self.robot.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
         self.robot.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
         self.robot.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
+
+        # print as list
+        # print(self.reward_comps.tolist())
 
 
 # @torch.jit.script

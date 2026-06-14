@@ -14,19 +14,22 @@ from isaaclab.utils import configclass
 
 from assets.robots.chicken import CHICKEN_CFG
 
+# python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0 --headless
+# python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 9
+
 
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
     decimation = 4
-    episode_length_s = 45
+    episode_length_s = 30
     # - spaces definition
     action_space = 8  # command 8 motor positions
 
     # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
     # imu...
     # history_length = 15
-    observation_space = 8 + 8 * 2 + 3 * 2 + 2
+    observation_space = 8 + 8 * 2 + 3 * 2 + 2 + 2
     # observation_space = (8 + 8 * 2 + 3 * 4) + 8 * 2 * history_length  # remember actions
 
     state_space = 0
