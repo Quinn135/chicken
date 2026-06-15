@@ -227,6 +227,23 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # https://skrl.readthedocs.io/en/latest/api/utils/runner.html
     runner = Runner(env, agent_cfg)
 
+    original_step = env.step
+
+    def step_with_logging(actions):
+        # 1. Execute the standard simulation step
+        step_returns = original_step(actions)
+
+        # 2. Extract our custom dictionary from the unwrapped ChickenEnv
+        if "reward_components" in env.unwrapped.extras:
+            for comp_name, comp_value in env.unwrapped.extras["reward_components"].items():
+                # 3. Push the data directly to skrl's active TensorBoard writer
+                runner.agent.track_data(f"Reward_Components/{comp_name}", comp_value)
+
+        return step_returns
+
+    # Override the environment's step function with our hook
+    env.step = step_with_logging
+
     # load checkpoint (if specified)
     if resume_path:
         print(f"[INFO] Loading model checkpoint from: {resume_path}")
