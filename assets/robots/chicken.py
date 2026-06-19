@@ -1,7 +1,5 @@
 """Configuration for a my chicken!"""
 
-import math
-
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
@@ -53,7 +51,7 @@ CHICKEN_CFG = ArticulationCfg(
     ),
     actuators={
         "motor_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["l.*", "r.*"], effort_limit_sim=200.0, stiffness=100.0, damping=5.0
+            joint_names_expr=["l.*", "r.*"], effort_limit_sim=200.0, stiffness=100.0, damping=10.0
         ),
     },
 )

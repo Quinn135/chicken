@@ -53,8 +53,8 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -0.5
-        self.max_target_vel = 0.5
+        self.min_target_vel = 0.2
+        self.max_target_vel = 1.0
         self.min_target_horiz_vel = 0
         self.max_target_horiz_vel = 0
         self.min_target_yaw_rate = -torch.pi / 2.0
@@ -143,7 +143,7 @@ class ChickenEnv(DirectRLEnv):
             )
             self.target_yaw_rate[vel_env_ids] = 0.0
 
-            self.target_vel[yaw_env_ids] = 0.0
+            self.target_vel[yaw_env_ids] = self.min_target_vel
             self.target_horiz_vel[yaw_env_ids] = 0.0
             self.target_yaw_rate[yaw_env_ids] = sample_uniform(
                 self.min_target_yaw_rate,
@@ -309,7 +309,14 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 2.0
 
-        out_of_bounds = tilted_too_much | too_fast | too_high | below_threshold
+        xy_speed = torch.norm(self.robot.data.root_lin_vel_w[:, :2], dim=-1)
+
+        # kill it if its not moving!!!!!!!!!!
+        too_slow = xy_speed < 0.1
+        grace_period_passed = self.episode_length_buf > 15
+        lazy_death = too_slow & grace_period_passed
+
+        out_of_bounds = tilted_too_much | too_fast | too_high | below_threshold | lazy_death
         return out_of_bounds, time_out
 
     def _reset_idx(self, env_ids: Sequence[int] | None):
@@ -372,7 +379,7 @@ class ChickenEnv(DirectRLEnv):
         )
         self.target_yaw_rate[vel_env_ids] = 0.0
 
-        self.target_vel[yaw_env_ids] = 0.0
+        self.target_vel[yaw_env_ids] = self.min_target_vel
         self.target_horiz_vel[yaw_env_ids] = 0.0
         self.target_yaw_rate[yaw_env_ids] = sample_uniform(
             self.min_target_yaw_rate,
