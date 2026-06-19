@@ -213,7 +213,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        uprightedness = torch.clamp(torch.exp(40 * (torch.pow(-gravity_local[:, 2] - 1, 1.0))), min=0.0, max=0.85) * 0.5
+        uprightedness = torch.exp(40 * (torch.pow(-gravity_local[:, 2] - 1, 1.0)))
 
         # yaw from quaternion (needed for vel target projection to world frame)
         roll, pitch, yaw = euler_xyz_from_quat(body_quats)
@@ -222,7 +222,7 @@ class ChickenEnv(DirectRLEnv):
         # height reward
         body_pos_z = self.current_pos[:, 2]
         target_height = 0.1
-        height = torch.exp(-torch.square(body_pos_z - target_height) * 50) * 0.5
+        height = torch.exp(-torch.square(body_pos_z - target_height) * 50)
 
         # FIX 4: Reduce delta_reward weight so it doesn't dominate.
         # Original weight 0.5 was large enough to create a "stand still with constant
@@ -247,15 +247,15 @@ class ChickenEnv(DirectRLEnv):
         ) / 2.0
 
         vel_reward = torch.exp(-vel_mean_square_error * 20.0)
-        yaw_reward = torch.exp(-torch.square(yaw_rate - target_yaw_rate) * 30.0)
+        yaw_reward = torch.exp(-torch.square(yaw_rate - target_yaw_rate) * 15.0)
 
         raw_components = [
             alive_award,  # [0]
             large_vels,  # [1]
-            uprightedness,  # [2]
+            uprightedness * 10.0,  # [2]
             vel_reward * 10.0,  # [3]
             yaw_reward * 10.0,  # [4]
-            height,  # [5]
+            height * 5.0,  # [5]
             delta_reward,  # [6]
         ]
 
@@ -291,7 +291,7 @@ class ChickenEnv(DirectRLEnv):
         time_out = self.episode_length_buf >= self.max_episode_length - 1
 
         body_pos_z = self.current_pos[:, 2]
-        threshold = 0.065
+        threshold = 0.0725
         below_threshold = body_pos_z < threshold
         # print(body_pos_z.mean().item())
 
@@ -300,12 +300,12 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.6
+        tilted_too_much = gravity_local[:, 2] > -0.875
 
         # FIX 2 (continued): Use physics velocity instead of position differencing.
         # The original (current_pos - last_pos) / dt was stale on the very first step
         # after a reset and accumulated noise from position quantization.
-        too_fast = torch.norm(self.robot.data.root_lin_vel_w, dim=-1) > 20.0
+        too_fast = torch.norm(self.robot.data.root_lin_vel_w, dim=-1) > 40.0
 
         too_high = torch.abs(body_pos_z) > 2.0
 

@@ -27,7 +27,7 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 1
+    decimation = 2
     episode_length_s = 30
     # - spaces definition
     action_space = 8  # command 8 motor positions
