@@ -98,6 +98,9 @@ section-order = [
 
 [tool.ruff.format]
 
+[tool.flake8]
+max-line-length = 120
+
 docstring-code-format = true
 
 [tool.pyright]
