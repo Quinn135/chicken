@@ -55,8 +55,8 @@ CHICKEN_CFG = ArticulationCfg(
         "motor_actuator": ImplicitActuatorCfg(
             joint_names_expr=["l.*", "r.*"],
             effort_limit_sim=2000.0,
-            stiffness=100.0,
-            damping=6.0,
+            stiffness=5.0,
+            damping=0.2,
         ),
     },
 )
