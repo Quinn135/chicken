@@ -27,24 +27,23 @@ class ChickenEnv(DirectRLEnv):
         super().__init__(cfg, render_mode, **kwargs)
 
         self._l_joint_dof_idxs = [
-            self.robot.find_joints("lr")[0],
-            self.robot.find_joints("l0")[0],
-            self.robot.find_joints("l1")[0],
-            self.robot.find_joints("l2")[0],
+            self.robot.find_joints("Revolute_5")[0],  # lr
+            self.robot.find_joints("Revolute_4")[0],  # l0
+            self.robot.find_joints("Revolute_1")[0],  # l1
         ]
         self._r_joint_dof_idxs = [
-            self.robot.find_joints("rr")[0],
-            self.robot.find_joints("r0")[0],
-            self.robot.find_joints("r1")[0],
-            self.robot.find_joints("r2")[0],
+            self.robot.find_joints("Revolute_3")[0],  # rr
+            self.robot.find_joints("Revolute_6")[0],  # r0
+            self.robot.find_joints("Revolute_2")[0],  # r1
         ]
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
-        self._last_foot_idxs = [self.robot.find_joints("r2")[0], self.robot.find_joints("l2")[0]]
+        # self._last_foot_idxs = [self.robot.find_joints("r2")[0], self.robot.find_joints("l2")[0]]
 
-        self._body_idxs = self.robot.find_bodies("body")[0]
-        self._left_foot_idx = self.robot.find_bodies("legLeft2")[0]
-        self._right_foot_idx = self.robot.find_bodies("legRight2")[0]
-        self._foot_idxs = [self.robot.find_bodies("legRight2")[0], self.robot.find_bodies("legLeft2")[0]]
+        self._body_idxs = self.robot.find_bodies("Group_1")[0]
+        # self._body_root_idxs = self.robot.find_bodies("Group_1/root")[0]
+        # self._left_foot_idx = self.robot.find_bodies("legLeft2")[0]
+        # self._right_foot_idx = self.robot.find_bodies("legRight2")[0]
+        # self._foot_idxs = [self.robot.find_bodies("legRight2")[0], self.robot.find_bodies("legLeft2")[0]]
 
         self.joint_pos = self.robot.data.joint_pos
         self.joint_vel = self.robot.data.joint_vel
@@ -53,12 +52,12 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = 0.2
-        self.max_target_vel = 1.0
-        self.min_target_horiz_vel = 0
-        self.max_target_horiz_vel = 0
-        self.min_target_yaw_rate = -torch.pi / 2.0
-        self.max_target_yaw_rate = torch.pi / 2.0
+        self.min_target_vel = -0.2
+        self.max_target_vel = 0.6
+        self.min_target_horiz_vel = -0.1
+        self.max_target_horiz_vel = 0.1
+        self.min_target_yaw_rate = -torch.pi / 3.0
+        self.max_target_yaw_rate = torch.pi / 3.0
 
         # self.push_step = torch.zeros(self.num_envs, dtype=torch.int32, device=self.device)
         # self.push_force = torch.zeros((self.num_envs, 1, 3), device=self.device)
@@ -80,8 +79,14 @@ class ChickenEnv(DirectRLEnv):
 
         self.vel_mask = torch.zeros((self.num_envs), dtype=torch.bool, device=self.device)
 
-        self.last_action = torch.zeros((self.num_envs, 8), device=self.device)
+        self.last_action = torch.zeros((self.num_envs, 6), device=self.device)
         self.start_rotation = torch.zeros((self.num_envs, 4), device=self.device)
+
+        self.history = torch.zeros(
+            (self.num_envs, self.cfg.history_length * self.cfg.history_interval, 6), device=self.device
+        )
+
+        self.sim_step_counter = 0
 
     def _setup_scene(self):
         self.robot = Articulation(self.cfg.robot_cfg)
@@ -108,7 +113,22 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 25
+        self.min_target_vel = -0.2
+        self.max_target_vel = 1.1 + 0.3 * (self.sim_step_counter > 36000) + 0.3 * (self.sim_step_counter > 48000)
+        self.min_target_horiz_vel = -0.1 - 0.1 * (self.sim_step_counter > 36000) - 0.1 * (self.sim_step_counter > 48000)
+        self.max_target_horiz_vel = 0.1 + 0.1 * (self.sim_step_counter > 36000) + 0.1 * (self.sim_step_counter > 48000)
+        self.min_target_yaw_rate = (
+            -torch.pi / 3.0
+            - torch.pi / 6.0 * (self.sim_step_counter > 36000)
+            - torch.pi / 6.0 * (self.sim_step_counter > 48000)
+        )
+        self.max_target_yaw_rate = (
+            torch.pi / 3.0
+            - torch.pi / 6.0 * (self.sim_step_counter > 36000)
+            - torch.pi / 6.0 * (self.sim_step_counter > 48000)
+        )
+
+        force_mag = 35.0 + 40.0 * (self.sim_step_counter > 36000) + 100.0 * (self.sim_step_counter > 48000)
 
         force_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 100.0
         forces = torch.zeros((self.num_envs, 1, 3), device=self.device)
@@ -154,7 +174,7 @@ class ChickenEnv(DirectRLEnv):
 
     def _apply_action(self) -> None:
         # apply joint actions
-        scaled_actions = self.actions[:, :8] * self.all_pos_range
+        scaled_actions = self.actions[:, :6] * self.all_pos_range
         scaled_actions = scaled_actions.unsqueeze(dim=2)
         self.robot.set_joint_position_target(scaled_actions, joint_ids=self._all_joint_dof_idxs)
 
@@ -174,6 +194,10 @@ class ChickenEnv(DirectRLEnv):
         roll, pitch, yaw = euler_xyz_from_quat(body_quats)
         self.yaw = yaw.clone()
 
+        real_history = self.history.clone()[
+            :, list(range(0, self.cfg.history_length * self.cfg.history_interval, self.cfg.history_interval)), :
+        ]
+
         obs = torch.cat(
             (
                 self.joint_vel[:, self._l_joint_dof_idxs].flatten(start_dim=-2).unsqueeze(dim=1),
@@ -186,6 +210,10 @@ class ChickenEnv(DirectRLEnv):
                 self.target_vel.unsqueeze(dim=1),
                 self.target_horiz_vel.unsqueeze(dim=1),
                 self.target_yaw_rate.unsqueeze(dim=1),
+                real_history.flatten(start_dim=-2).unsqueeze(dim=1),
+                roll.unsqueeze(dim=1).unsqueeze(dim=1),
+                pitch.unsqueeze(dim=1).unsqueeze(dim=1),
+                yaw.unsqueeze(dim=1).unsqueeze(dim=1),
             ),
             dim=-1,
         )
@@ -193,10 +221,15 @@ class ChickenEnv(DirectRLEnv):
         obs = torch.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0)
         obs = torch.clamp(obs, min=-100.0, max=100.0)
 
+        self.history = torch.roll(self.history, shifts=1, dims=1)
+        self.history[:, 0, :] = self.actions.clone()
+
         observations = {"policy": obs}
         return observations
 
     def _get_rewards(self) -> torch.Tensor:
+        self.sim_step_counter += 1
+
         self.current_pos = self.robot.data.body_pos_w[:, self._body_idxs, :].squeeze(1)
 
         # ---- Shared computation (compute body_quats once) ----
@@ -213,7 +246,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        uprightedness = torch.exp(40 * (torch.pow(-gravity_local[:, 2] - 1, 1.0)))
+        uprightedness = torch.exp(100 * (torch.pow(-gravity_local[:, 2] - 1, 1.0)))
 
         # yaw from quaternion (needed for vel target projection to world frame)
         roll, pitch, yaw = euler_xyz_from_quat(body_quats)
@@ -221,22 +254,25 @@ class ChickenEnv(DirectRLEnv):
 
         # height reward
         body_pos_z = self.current_pos[:, 2]
-        target_height = 0.1
+        target_height = 0.07
         height = torch.exp(-torch.square(body_pos_z - target_height) * 50)
 
         # FIX 4: Reduce delta_reward weight so it doesn't dominate.
         # Original weight 0.5 was large enough to create a "stand still with constant
         # zero actions" local optimum. Reduced to 0.1 so it's a tie-breaker, not a goal.
         movement_delta = torch.sum(torch.square(self.actions - self.last_action), dim=-1)
-        delta_reward = torch.exp(-movement_delta * 0.5) * 0.1
+        delta_reward = torch.exp(-movement_delta * 0.5)
 
         # ---- Velocity / yaw-rate tracking ----
         lin_vel_w = self.robot.data.root_lin_vel_w  # (num_envs, 3), world frame
         yaw_rate = self.robot.data.root_ang_vel_w[:, 2]  # z-axis = yaw rate, rad/s
 
-        target_vel = self.target_vel.flatten()
-        target_horiz_vel = self.target_horiz_vel.flatten()
-        target_yaw_rate = self.target_yaw_rate.flatten()
+        target_vel = self.target_vel.flatten() * float(self.sim_step_counter > 12000)
+        # target_vel = 0.0
+        target_horiz_vel = self.target_horiz_vel.flatten() * float(self.sim_step_counter > 12000)
+        # target_horiz_vel = 0.0
+        target_yaw_rate = self.target_yaw_rate.flatten() * float(self.sim_step_counter > 12000)
+        # target_yaw_rate = 0.0
 
         # project body-frame velocity commands into world frame
         target_vel_x = target_vel * torch.cos(yaw) + target_horiz_vel * torch.cos(yaw + torch.pi / 2.0)
@@ -247,35 +283,39 @@ class ChickenEnv(DirectRLEnv):
         ) / 2.0
 
         vel_reward = torch.exp(-vel_mean_square_error * 20.0)
-        yaw_reward = torch.exp(-torch.square(yaw_rate - target_yaw_rate) * 15.0)
+        yaw_reward = torch.exp(-torch.square(yaw_rate - target_yaw_rate) * 20.0)
+
+        # reward rr and lr joint actions (targets) close to 0
+        root_actions = self.actions[:, [0, 3]]
+        root_action_penalty = torch.exp(-torch.square(torch.sum(root_actions, dim=-1)) * 2.5)
 
         raw_components = [
             alive_award,  # [0]
             large_vels,  # [1]
-            uprightedness * 10.0,  # [2]
-            vel_reward * 10.0,  # [3]
-            yaw_reward * 10.0,  # [4]
-            height * 5.0,  # [5]
-            delta_reward,  # [6]
+            uprightedness * 0.5,  # [2]
+            vel_reward * 1.0,  # [3]
+            yaw_reward * 1.0,  # [4]
+            # height * 2.5,  # [5]
+            # root_action_penalty * 0.5,  # [6]
+            delta_reward * 0.5,  # [7]
         ]
 
         safe_components = [torch.nan_to_num(r, nan=0.0, posinf=0.0, neginf=0.0) for r in raw_components]
         safe_components = [torch.clamp(r, min=-1000.0, max=1000.0) for r in safe_components]
 
-        out_of_bounds, _ = self._get_dones()
-        reward_components = [torch.where(out_of_bounds, torch.zeros_like(r), r) for r in safe_components]
+        # out_of_bounds, _ = self._get_dones()
+        # reward_components = [torch.where(out_of_bounds, torch.zeros_like(r), r) for r in safe_components]
+        reward_components = safe_components
 
-        # FIX 5: Reward logging had wrong component indices.
-        # reward_components[2] is uprightedness, NOT vel_reward.
-        # reward_components[3] is vel_reward, NOT yaw_reward.
         self.extras["reward_components"] = {
             "alive_award": reward_components[0].mean().item(),
             "large_vels": reward_components[1].mean().item(),
             "uprightedness": reward_components[2].mean().item(),
             "vel_reward": reward_components[3].mean().item(),
             "yaw_reward": reward_components[4].mean().item(),
-            "height": reward_components[5].mean().item(),
-            "delta_reward": reward_components[6].mean().item(),
+            # "height": reward_components[3].mean().item(),
+            # "root_action_penalty": reward_components[4].mean().item(),
+            "delta_reward": reward_components[5].mean().item(),
         }
 
         total_reward = torch.sum(torch.stack(reward_components), dim=0)
@@ -291,7 +331,7 @@ class ChickenEnv(DirectRLEnv):
         time_out = self.episode_length_buf >= self.max_episode_length - 1
 
         body_pos_z = self.current_pos[:, 2]
-        threshold = 0.0725
+        threshold = 0.02
         below_threshold = body_pos_z < threshold
         # print(body_pos_z.mean().item())
 
@@ -300,7 +340,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.875
+        tilted_too_much = gravity_local[:, 2] > -0.7
 
         # FIX 2 (continued): Use physics velocity instead of position differencing.
         # The original (current_pos - last_pos) / dt was stale on the very first step
@@ -309,15 +349,18 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 2.0
 
-        xy_speed = torch.norm(self.robot.data.root_lin_vel_w[:, :2], dim=-1)
+        # xy_speed = torch.norm(self.robot.data.root_lin_vel_w[:, :2], dim=-1)
 
         # kill it if its not moving!!!!!!!!!!
-        too_slow = xy_speed < 0.1
-        grace_period_passed = self.episode_length_buf > 15
-        lazy_death = too_slow & grace_period_passed
+        # too_slow = xy_speed < 0.1
+        # grace_period_passed = self.episode_length_buf > 15
+        # lazy_death = too_slow & grace_period_passed
 
-        out_of_bounds = tilted_too_much | too_fast | too_high | below_threshold | lazy_death
+        out_of_bounds = tilted_too_much | too_fast | too_high | below_threshold
+        if self.sim_step_counter > 48000:
+            out_of_bounds = too_fast | too_high
         return out_of_bounds, time_out
+        # return torch.zeros(self.num_envs, dtype=torch.bool, device=self.device), time_out
 
     def _reset_idx(self, env_ids: Sequence[int] | None):
         if env_ids is None:
@@ -334,6 +377,7 @@ class ChickenEnv(DirectRLEnv):
 
         self.current_pos[env_ids] = default_root_state[:, :3]
         self.last_pos[env_ids] = self.current_pos[env_ids]
+        self.history[env_ids] = 0.0
 
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel

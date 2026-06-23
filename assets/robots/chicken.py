@@ -10,7 +10,7 @@ from isaaclab.assets import ArticulationCfg
 
 CHICKEN_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/workspace/isaaclab/source/chicken8body.usd",
+        usd_path="/workspace/isaaclab/source/chickenv2body0.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -27,7 +27,7 @@ CHICKEN_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.12),
+        pos=(0.0, 0.0, 0.1),
         # joint_pos={
         #     "lr": 0.0,
         #     "l0": 8.969 * math.pi / 180.0,
@@ -39,19 +39,17 @@ CHICKEN_CFG = ArticulationCfg(
         #     "r2": 9.901 * math.pi / 180.0,
         # },
         joint_pos={
-            "lr": 0.0,
-            "l0": 0.0,
-            "l1": 0.0,
-            "l2": 0.0,
-            "rr": 0.0,
-            "r0": 0.0,
-            "r1": 0.0,
-            "r2": 0.0,
+            "Revolute_1": 0.0,
+            "Revolute_2": 0.0,
+            "Revolute_3": 0.0,
+            "Revolute_4": 0.0,
+            "Revolute_5": 0.0,
+            "Revolute_6": 0.0,
         },
     ),
     actuators={
         "motor_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["l.*", "r.*"], effort_limit_sim=200.0, stiffness=100.0, damping=10.0
+            joint_names_expr=["Revolute.*"], effort_limit_sim=200.0, stiffness=12.5, damping=0.5
         ),
     },
 )

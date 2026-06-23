@@ -20,6 +20,8 @@ apt-get install git-lfs
 git lfs install
 git config --global user.email "cooperstein.quinn@gmail.com"
 git config --global user.name Quinn135
+cd /workspace
+mkdir chicken
 cd /workspace/chicken && git clone https://github.com/Quinn135/chicken.git && cd chicken
 python -m pip install -e source/chicken
 # then open vscode and use dev containers
@@ -42,10 +44,17 @@ Type and select: Dev Containers: Attach to Running Container...
 cd /workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/direct/ai3
 
 # to train
-python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0
+python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 4
 
-python scripts/skrl/train.py --task=Arm-Ai2-Direct-v0
-tensorboard --logdir ai2/logs/skrl/arm
+python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0
+tensorboard --logdir logs/skrl/chicken5
+
+
+
+
+
+
+
 
 # to resume:
 python train.py --task=Isaac-Ai3-Direct-v0 --checkpoint absolute/dir/to/###.pt
