@@ -10,7 +10,7 @@ from isaaclab.assets import ArticulationCfg
 
 CHICKEN_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/workspace/isaaclab/source/chickenv2body0.usd",
+        usd_path="/workspace/isaaclab/source/chickenv30.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -27,7 +27,7 @@ CHICKEN_CFG = ArticulationCfg(
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.1),
+        pos=(0.0, 0.0, 0.0),
         # joint_pos={
         #     "lr": 0.0,
         #     "l0": 8.969 * math.pi / 180.0,
@@ -39,17 +39,19 @@ CHICKEN_CFG = ArticulationCfg(
         #     "r2": 9.901 * math.pi / 180.0,
         # },
         joint_pos={
-            "Revolute_1": 0.0,
-            "Revolute_2": 0.0,
-            "Revolute_3": 0.0,
-            "Revolute_4": 0.0,
-            "Revolute_5": 0.0,
-            "Revolute_6": 0.0,
+            "l_side_hip": 0.0,
+            "l_hip": 0.0,
+            "l_knee": 0.0,
+            "l_ankle": 0.0,
+            "r_side_hip": 0.0,
+            "r_hip": 0.0,
+            "r_knee": 0.0,
+            "r_ankle": 0.0,
         },
     ),
     actuators={
         "motor_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["Revolute.*"], effort_limit_sim=200.0, stiffness=12.5, damping=0.5
+            joint_names_expr=["r_.*", "l_.*"], effort_limit_sim=200.0, stiffness=12.5, damping=0.5
         ),
     },
 )

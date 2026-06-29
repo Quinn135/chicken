@@ -27,19 +27,21 @@ class ChickenEnv(DirectRLEnv):
         super().__init__(cfg, render_mode, **kwargs)
 
         self._l_joint_dof_idxs = [
-            self.robot.find_joints("Revolute_5")[0],  # lr
-            self.robot.find_joints("Revolute_4")[0],  # l0
-            self.robot.find_joints("Revolute_1")[0],  # l1
+            self.robot.find_joints("l_side_hip")[0],
+            self.robot.find_joints("l_hip")[0],
+            self.robot.find_joints("l_knee")[0],
+            self.robot.find_joints("l_ankle")[0],
         ]
         self._r_joint_dof_idxs = [
-            self.robot.find_joints("Revolute_3")[0],  # rr
-            self.robot.find_joints("Revolute_6")[0],  # r0
-            self.robot.find_joints("Revolute_2")[0],  # r1
+            self.robot.find_joints("r_side_hip")[0],
+            self.robot.find_joints("r_hip")[0],
+            self.robot.find_joints("r_knee")[0],
+            self.robot.find_joints("r_ankle")[0],
         ]
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
         # self._last_foot_idxs = [self.robot.find_joints("r2")[0], self.robot.find_joints("l2")[0]]
 
-        self._body_idxs = self.robot.find_bodies("Group_1")[0]
+        self._body_idxs = self.robot.find_bodies("base_link")[0]
         # self._body_root_idxs = self.robot.find_bodies("Group_1/root")[0]
         # self._left_foot_idx = self.robot.find_bodies("legLeft2")[0]
         # self._right_foot_idx = self.robot.find_bodies("legRight2")[0]

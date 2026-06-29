@@ -30,14 +30,14 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     decimation = 2
     episode_length_s = 20
     # - spaces definition
-    action_space = 6  # command 8 motor positions
+    action_space = 8  # command 8 motor positions
 
     # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
     # imu...
     history_length = 5
     history_interval = 4
     # observation_space = 6 + 6 * 2 + 3 * 2 + 2 + 1 + 1 + 1
-    observation_space = 6 + 6 * 2 + 3 * 2 + 2 + 1 + 1 + 1 + 6 * history_length + 3  # remember actions
+    observation_space = 8 + 8 * 2 + 3 * 2 + 2 + 1 + 1 + 1 + 8 * history_length + 3  # remember actions
 
     state_space = 0
 
@@ -47,9 +47,14 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # robot(s)
     robot_cfg: ArticulationCfg = CHICKEN_CFG.replace(prim_path="/World/envs/env_.*/Robot")
 
-    pos_range = [120 * math.pi / 180.0, 120 * math.pi / 180.0, 120 * math.pi / 180.0]
+    # order:
+    # "side_hip"
+    # "hip"
+    # "knee"
+    # "ankle"
+    pos_range = [50 * math.pi / 180.0, 80 * math.pi / 180.0, 140 * math.pi / 180.0, 80 * math.pi / 180.0]
 
-    imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken_real_assembled/Group_1/root")
+    imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken/base_link")
 
     # scene
     # 9 envs if playing, otherwise 4096
