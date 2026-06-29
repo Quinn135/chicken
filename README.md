@@ -19,7 +19,6 @@ python docker/container.py enter
 
 
 # run these in the container
-`
 apt update && apt upgrade && apt-get update && apt-get upgrade
 
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
@@ -39,7 +38,6 @@ mkdir chicken
 cd /workspace/chicken && git clone https://github.com/Quinn135/chicken.git && cd chicken
 
 python -m pip install -e source/chicken
-`
 
 ### then open vscode and use dev containers
 ### and then do tasks: run; to set up python is vscode!
