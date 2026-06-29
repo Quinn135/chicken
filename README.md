@@ -2,18 +2,24 @@
 # https://isaac-sim.github.io/IsaacLab/main/source/deployment/run_docker_example.html
 
 ### for isaaclab:
+
 cd /home/quinn/IsaacLab
+
 conda activate lab
 
 # 1. Authorize screen sharing
+
 xhost +local:docker
 
 # 2. Start the container framework (it will find your local Isaac Sim 5.1 image)
+
 python docker/container.py start
+
 python docker/container.py enter
 
 
 # run these in the container
+
 apt update && apt upgrade && apt-get update && apt-get upgrade
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
 apt-get install git-lfs
@@ -24,16 +30,19 @@ cd /workspace
 mkdir chicken
 cd /workspace/chicken && git clone https://github.com/Quinn135/chicken.git && cd chicken
 python -m pip install -e source/chicken
-# then open vscode and use dev containers
-# and then do tasks: run; to set up python is vscode!
+
+### then open vscode and use dev containers
+### and then do tasks: run; to set up python is vscode!
 
 # to stop: python docker/container.py stop
 # but make sure git is saved!!!!!!!!
 
 # to open isaacsim
+
 isaaclab -s
 
 # IN VSCODE:
+
 Open the Command Palette by pressing Ctrl+Shift+P (Windows/Linux) or Cmd+Shift+P (Mac).
 
 Type and select: Dev Containers: Attach to Running Container...
@@ -44,6 +53,7 @@ Type and select: Dev Containers: Attach to Running Container...
 cd /workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/direct/ai3
 
 # to train
+
 python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 4
 
 python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0
@@ -57,17 +67,21 @@ tensorboard --logdir logs/skrl/chicken5
 
 
 # to resume:
+
 python train.py --task=Isaac-Ai3-Direct-v0 --checkpoint absolute/dir/to/###.pt
 
 # mounted folder:
+
 /home/quinn/IsaacLab/source
 
 # to save files from isaaclab to local dir:
 # Copy the file /workspace/isaaclab/____ to the current directory
+
 docker cp isaac-lab-base:/workspace/isaaclab/____ .
 
 
 ### to run the docker:
+
 xhost +local:docker
 
 docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host \
