@@ -12,7 +12,7 @@ from isaaclab.assets import ArticulationCfg
 
 CHICKEN_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/workspace/isaaclab/source/chickenv32.usd",
+        usd_path="/workspace/chicken/chicken/models/chickenv33.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -55,15 +55,15 @@ CHICKEN_CFG = ArticulationCfg(
     actuators={
         "motor_actuator": DelayedPDActuatorCfg(
             joint_names_expr=["r_.*", "l_.*"],
-            min_delay=1,
-            max_delay=2,
-            effort_limit=20.0,
-            effort_limit_sim=25.0,
-            velocity_limit=5.0,
-            velocity_limit_sim=7.5,
-            stiffness=9.5,
-            damping=1.0,
-            armature=0.4,
+            min_delay=0,
+            max_delay=0,
+            effort_limit=24.0,
+            effort_limit_sim=28.0,
+            velocity_limit=7.0,
+            velocity_limit_sim=8.0,
+            stiffness=20.0,
+            damping=0.5,
+            armature=0.1,
             friction=0.1,
             dynamic_friction=0.075,
             viscous_friction=0.075,

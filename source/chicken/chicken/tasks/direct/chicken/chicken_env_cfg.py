@@ -6,10 +6,11 @@
 
 import math
 
+import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg
 from isaaclab.envs import DirectRLEnvCfg
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ImuCfg, ContactSensorCfg
+from isaaclab.sensors import ContactSensorCfg, ImuCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
@@ -27,22 +28,21 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 2
+    decimation = 1
     episode_length_s = 20
-    # - spaces definition
     action_space = 8  # command 8 motor positions
 
-    # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
-    # imu...
-    history_length = 15
+    history_length = 30
     history_interval = 1
-    # observation_space = 6 + 6 * 2 + 3 * 2 + 2 + 1 + 1 + 1
-    observation_space = 8 + 8 * 2 + 3 * 2 + 2 + 1 + 1 + 1 + 8 * history_length + 3  # remember actions
+
+    original_observation_space = 8 + 8 * 2 + 4 + 3 + 3
+    observation_space = original_observation_space + history_length * original_observation_space
 
     state_space = 0
 
     # simulation
     sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
+    render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)
     robot_cfg: ArticulationCfg = CHICKEN_CFG.replace(prim_path="/World/envs/env_.*/Robot")
@@ -60,11 +60,13 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         prim_path="/World/envs/env_.*/Robot/r_foot",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
+        track_air_time=True,
     )
     contact_cfg_l: ContactSensorCfg = ContactSensorCfg(
         prim_path="/World/envs/env_.*/Robot/l_foot",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
+        track_air_time=True,
     )
 
     contact_cfg_r_leg: ContactSensorCfg = ContactSensorCfg(
@@ -90,12 +92,23 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     )
 
     contact_cfg_r_thigh: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/r_hip",
+        prim_path="/World/envs/env_.*/Robot/r_thigh",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
     contact_cfg_l_thigh: ContactSensorCfg = ContactSensorCfg(
         prim_path="/World/envs/env_.*/Robot/l_thigh",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+
+    contact_cfg_r_ankle: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/rm_ankle",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+    contact_cfg_l_ankle: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/lm_ankle",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
