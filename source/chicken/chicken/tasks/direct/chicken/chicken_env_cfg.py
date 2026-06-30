@@ -21,14 +21,14 @@ from assets.robots.chicken import CHICKEN_CFG
 # python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 9
 # for vscode, python is at /isaac-sim/kit/python/bin/python3
 # if you want to clone, clone into /workspace/chicken or /workspace/wherever_you_want
-# and tensorboard command is: tensorboard --logdir logs/skrl/chicken3 --bind_all --logdir logs/skrl/chicken4
+# and tensorboard command is: tensorboard --logdir logs/skrl/chicken3 --bind_all --logdir logs/skrl/chickenv3
 
 
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
     decimation = 2
-    episode_length_s = 20
+    episode_length_s = 10
     # - spaces definition
     action_space = 8  # command 8 motor positions
 
@@ -54,10 +54,9 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # "ankle"
     pos_range = [50 * math.pi / 180.0, 80 * math.pi / 180.0, 140 * math.pi / 180.0, 80 * math.pi / 180.0]
 
-    imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken/base_link")
+    imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/base_link")
 
     # scene
-    # 9 envs if playing, otherwise 4096
 
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1, env_spacing=1.5, replicate_physics=True)
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=900, env_spacing=1.5, replicate_physics=True)

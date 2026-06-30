@@ -67,6 +67,8 @@ python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 4
 python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0
 tensorboard --logdir logs/skrl/chicken5
 
+tensorboard --logdir logs/skrl/chicken3 --bind_all --logdir logs/skrl/chicken4
+
 
 
 

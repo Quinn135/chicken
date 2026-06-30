@@ -10,7 +10,7 @@ from isaaclab.assets import ArticulationCfg
 
 CHICKEN_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
-        usd_path="/workspace/isaaclab/source/chickenv30.usd",
+        usd_path="/workspace/isaaclab/source/chickenv32.usd",
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             rigid_body_enabled=True,
             max_linear_velocity=1000.0,
@@ -51,7 +51,10 @@ CHICKEN_CFG = ArticulationCfg(
     ),
     actuators={
         "motor_actuator": ImplicitActuatorCfg(
-            joint_names_expr=["r_.*", "l_.*"], effort_limit_sim=200.0, stiffness=12.5, damping=0.5
+            joint_names_expr=["r_.*", "l_.*"],
+            stiffness=25.0,
+            damping=0.5,
+            effort_limit_sim=25000.0,
         ),
     },
 )
