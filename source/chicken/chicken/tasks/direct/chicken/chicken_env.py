@@ -136,6 +136,12 @@ class ChickenEnv(DirectRLEnv):
         self.contact_l_leg = ContactSensor(self.cfg.contact_cfg_l_leg)
         self.contact_r_leg = ContactSensor(self.cfg.contact_cfg_r_leg)
 
+        self.contact_l_hip = ContactSensor(self.cfg.contact_cfg_l_hip)
+        self.contact_r_hip = ContactSensor(self.cfg.contact_cfg_r_hip)
+
+        self.contact_l_thigh = ContactSensor(self.cfg.contact_cfg_l_thigh)
+        self.contact_r_thigh = ContactSensor(self.cfg.contact_cfg_r_thigh)
+
         self.contact_base = ContactSensor(self.cfg.contact_cfg_base)
 
         # add articulation to scene
@@ -146,6 +152,10 @@ class ChickenEnv(DirectRLEnv):
         self.scene.sensors["contact_r"] = self.contact_r
         self.scene.sensors["contact_l_leg"] = self.contact_l_leg
         self.scene.sensors["contact_r_leg"] = self.contact_r_leg
+        self.scene.sensors["contact_l_hip"] = self.contact_l_hip
+        self.scene.sensors["contact_r_hip"] = self.contact_r_hip
+        self.scene.sensors["contact_l_thigh"] = self.contact_l_thigh
+        self.scene.sensors["contact_r_thigh"] = self.contact_r_thigh
         self.scene.sensors["contact_base"] = self.contact_base
 
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -167,16 +177,21 @@ class ChickenEnv(DirectRLEnv):
         # )
 
         # force_mag = 35.0 + 40.0 * (self.sim_step_counter > 36000) + 100.0 * (self.sim_step_counter > 48000)
-        force_mag = 80
+        force_mag = 85
+        target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
+        num_bodies = len(target_bodies)
 
         force_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 60.0
-        forces = torch.zeros((self.num_envs, 1, 3), device=self.device)
-        torques = torch.zeros((self.num_envs, 1, 3), device=self.device)
+
+        forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
+        torques = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
         if force_idxs.any():
-            forces[force_idxs] = sample_uniform(-force_mag, force_mag, (force_idxs.sum(), 1, 3), device=self.device)
+            forces[force_idxs] = sample_uniform(
+                -force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device
+            )
 
             self.robot.instantaneous_wrench_composer.set_forces_and_torques(
-                forces=forces, torques=torques, body_ids=self._body_idxs
+                forces=forces, torques=torques, body_ids=target_bodies
             )
 
         update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 1000.0
@@ -385,13 +400,13 @@ class ChickenEnv(DirectRLEnv):
             torch.square(z_vel) * -4e-4,
             torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -2e-5,
             # torch.sum(foot_speed * torch.exp(-relative_foot_z / 0.02), dim=1).flatten() * -8e-4,
-            feet_slip * -1.6e-3,
+            feet_slip * -2e-3,
             torch.any(joint_limit_violation, dim=1).flatten() * -0.2,
-            torch.sum(torch.square(joint_torques), dim=1).flatten() * -2e-5,
+            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-4,
             torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,
-            torch.sum(torch.square(joint_acc), dim=1).flatten() * -5e-9,
+            torch.sum(torch.square(joint_acc), dim=1).flatten() * -2.5e-8,
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -2e-3,
-            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -2e-3,
+            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -1e-2,
         ]
         # print(neg[2])
         # for item in neg:
@@ -440,7 +455,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.85
+        tilted_too_much = gravity_local[:, 2] > -0.2
 
         # FIX 2 (continued): Use physics velocity instead of position differencing.
         # The original (current_pos - last_pos) / dt was stale on the very first step
@@ -455,6 +470,10 @@ class ChickenEnv(DirectRLEnv):
                     torch.norm(self.contact_base.data.net_forces_w, dim=-1) > 0.0,
                     torch.norm(self.contact_l_leg.data.net_forces_w, dim=-1) > 0.0,
                     torch.norm(self.contact_r_leg.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_l_hip.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_r_hip.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_l_thigh.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_r_thigh.data.net_forces_w, dim=-1) > 0.0,
                 ),
                 dim=1,
             )

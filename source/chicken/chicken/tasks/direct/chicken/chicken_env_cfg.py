@@ -27,14 +27,14 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 1
+    decimation = 2
     episode_length_s = 20
     # - spaces definition
     action_space = 8  # command 8 motor positions
 
     # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
     # imu...
-    history_length = 30
+    history_length = 15
     history_interval = 1
     # observation_space = 6 + 6 * 2 + 3 * 2 + 2 + 1 + 1 + 1
     observation_space = 8 + 8 * 2 + 3 * 2 + 2 + 1 + 1 + 1 + 8 * history_length + 3  # remember actions
@@ -74,6 +74,28 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     )
     contact_cfg_l_leg: ContactSensorCfg = ContactSensorCfg(
         prim_path="/World/envs/env_.*/Robot/lm_knee",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+
+    contact_cfg_r_hip: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/rm_hip",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+    contact_cfg_l_hip: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/lm_hip",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+
+    contact_cfg_r_thigh: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/r_hip",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+    contact_cfg_l_thigh: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/l_thigh",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
