@@ -1,7 +1,9 @@
 """Configuration for a my chicken!"""
 
 import isaaclab.sim as sim_utils
-from isaaclab.actuators import ImplicitActuatorCfg
+from isaaclab.actuators import DelayedPDActuatorCfg
+
+# from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import ArticulationCfg
 
 ##
@@ -25,6 +27,7 @@ CHICKEN_CFG = ArticulationCfg(
             sleep_threshold=0.005,
             stabilization_threshold=0.001,
         ),
+        activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.0),
@@ -50,11 +53,19 @@ CHICKEN_CFG = ArticulationCfg(
         },
     ),
     actuators={
-        "motor_actuator": ImplicitActuatorCfg(
+        "motor_actuator": DelayedPDActuatorCfg(
             joint_names_expr=["r_.*", "l_.*"],
-            stiffness=25.0,
-            damping=0.5,
-            effort_limit_sim=25000.0,
+            min_delay=1,
+            max_delay=1,
+            effort_limit=20.0,
+            effort_limit_sim=25.0,
+            velocity_limit=5.0,
+            velocity_limit_sim=7.5,
+            stiffness=20.0,
+            damping=1.5,
+            armature=0.1,
+            friction=0.05,
+            viscous_friction=0.05,
         ),
     },
 )

@@ -9,7 +9,7 @@ import math
 from isaaclab.assets import ArticulationCfg
 from isaaclab.envs import DirectRLEnvCfg
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ImuCfg
+from isaaclab.sensors import ImuCfg, ContactSensorCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
@@ -27,15 +27,15 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 2
-    episode_length_s = 10
+    decimation = 1
+    episode_length_s = 20
     # - spaces definition
     action_space = 8  # command 8 motor positions
 
     # obs: motor vel, motor rot (sin, cos), lin_acc_b, ang_acc_b
     # imu...
-    history_length = 5
-    history_interval = 4
+    history_length = 30
+    history_interval = 1
     # observation_space = 6 + 6 * 2 + 3 * 2 + 2 + 1 + 1 + 1
     observation_space = 8 + 8 * 2 + 3 * 2 + 2 + 1 + 1 + 1 + 8 * history_length + 3  # remember actions
 
@@ -56,6 +56,33 @@ class ChickenEnvCfg(DirectRLEnvCfg):
 
     imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/base_link")
 
+    contact_cfg_r: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/r_foot",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+    contact_cfg_l: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/l_foot",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+
+    contact_cfg_r_leg: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/rm_knee",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+    contact_cfg_l_leg: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/lm_knee",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
+
+    contact_cfg_base: ContactSensorCfg = ContactSensorCfg(
+        prim_path="/World/envs/env_.*/Robot/base_link",
+        update_period=0.0,
+        filter_prim_paths_expr=["/World/ground"],
+    )
     # scene
 
     # scene: InteractiveSceneCfg = InteractiveSceneCfg(num_envs=1, env_spacing=1.5, replicate_physics=True)
