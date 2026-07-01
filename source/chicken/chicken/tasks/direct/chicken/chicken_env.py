@@ -44,7 +44,7 @@ class ChickenEnv(DirectRLEnv):
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
         # self._last_foot_idxs = [self.robot.find_joints("r2")[0], self.robot.find_joints("l2")[0]]
 
-        self._body_idxs = self.robot.find_bodies("wood")[0]
+        self._body_idxs = self.robot.find_bodies("imu")[0]
         # self._body_root_idxs = self.robot.find_bodies("Group_1/root")[0]
         # self._left_foot_idx = self.robot.find_bodies("legLeft2")[0]
         # self._right_foot_idx = self.robot.find_bodies("legRight2")[0]
@@ -158,17 +158,11 @@ class ChickenEnv(DirectRLEnv):
         self.contact_l = ContactSensor(self.cfg.contact_cfg_l)
         self.contact_r = ContactSensor(self.cfg.contact_cfg_r)
 
-        self.contact_l_leg = ContactSensor(self.cfg.contact_cfg_l_leg)
-        self.contact_r_leg = ContactSensor(self.cfg.contact_cfg_r_leg)
+        self.contact_l_knee = ContactSensor(self.cfg.contact_cfg_l_knee)
+        self.contact_r_knee = ContactSensor(self.cfg.contact_cfg_r_knee)
 
-        self.contact_l_hip = ContactSensor(self.cfg.contact_cfg_l_hip)
-        self.contact_r_hip = ContactSensor(self.cfg.contact_cfg_r_hip)
-
-        self.contact_l_thigh = ContactSensor(self.cfg.contact_cfg_l_thigh)
-        self.contact_r_thigh = ContactSensor(self.cfg.contact_cfg_r_thigh)
-
-        self.contact_r_ankle = ContactSensor(self.cfg.contact_cfg_r_ankle)
-        self.contact_l_ankle = ContactSensor(self.cfg.contact_cfg_l_ankle)
+        self.contact_l_foot = ContactSensor(self.cfg.contact_cfg_l_foot)
+        self.contact_r_foot = ContactSensor(self.cfg.contact_cfg_r_foot)
 
         self.contact_base = ContactSensor(self.cfg.contact_cfg_base)
 
@@ -178,14 +172,10 @@ class ChickenEnv(DirectRLEnv):
         self.scene.sensors["imu"] = self.imu
         self.scene.sensors["contact_l"] = self.contact_l
         self.scene.sensors["contact_r"] = self.contact_r
-        self.scene.sensors["contact_l_leg"] = self.contact_l_leg
-        self.scene.sensors["contact_r_leg"] = self.contact_r_leg
-        self.scene.sensors["contact_l_hip"] = self.contact_l_hip
-        self.scene.sensors["contact_r_hip"] = self.contact_r_hip
-        self.scene.sensors["contact_l_thigh"] = self.contact_l_thigh
-        self.scene.sensors["contact_r_thigh"] = self.contact_r_thigh
-        self.scene.sensors["contact_l_ankle"] = self.contact_l_ankle
-        self.scene.sensors["contact_r_ankle"] = self.contact_r_ankle
+        self.scene.sensors["contact_l_knee"] = self.contact_l_knee
+        self.scene.sensors["contact_r_knee"] = self.contact_r_knee
+        self.scene.sensors["contact_l_foot"] = self.contact_l_foot
+        self.scene.sensors["contact_r_foot"] = self.contact_r_foot
         self.scene.sensors["contact_base"] = self.contact_base
 
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -280,7 +270,7 @@ class ChickenEnv(DirectRLEnv):
         body_quats = self.robot.data.body_quat_w[:, self._body_idxs, :].flatten(start_dim=-2)
         self.roll, self.pitch, self.yaw = euler_xyz_from_quat(body_quats)
 
-        real_history = self.history.clone()[
+        real_history = self.history[
             :, list(range(0, self.cfg.history_length * self.cfg.history_interval, self.cfg.history_interval)), :
         ]
 
@@ -294,15 +284,15 @@ class ChickenEnv(DirectRLEnv):
             self.target_vel,
             self.target_horiz_vel,
             self.target_yaw_rate,
+            self.target_height,
+            self.target_pitch,
         )
+        obs_data = [t.unsqueeze(-1) if t.dim() == 1 else t for t in obs_data]
 
         obs = torch.cat(
-            (obs_data + (real_history.flatten(start_dim=-2),)),
+            [*obs_data, real_history.flatten(start_dim=-2)],
             dim=-1,
         )
-
-        obs = torch.nan_to_num(obs, nan=0.0, posinf=0.0, neginf=0.0)
-        obs = torch.clamp(obs, min=-100.0, max=100.0)
 
         self.history = torch.roll(self.history, shifts=1, dims=1)
         self.history[:, 0, :] = torch.cat(
@@ -492,7 +482,7 @@ class ChickenEnv(DirectRLEnv):
         time_out = self.episode_length_buf >= self.max_episode_length - 1
 
         body_pos_z = self.current_pos[:, 2]
-        threshold = 0.3
+        threshold = 0.1
         below_threshold = (body_pos_z < threshold) & (body_pos_z != 0.0)
         # print(body_pos_z.mean().item())
 
@@ -501,12 +491,9 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.2
+        tilted_too_much = -gravity_local[:, 2] > -0.2
 
-        # FIX 2 (continued): Use physics velocity instead of position differencing.
-        # The original (current_pos - last_pos) / dt was stale on the very first step
-        # after a reset and accumulated noise from position quantization.
-        too_fast = torch.norm(self.lin_vel_w, dim=-1) > 10.0
+        too_fast = torch.norm(self.lin_vel_w, dim=-1) > 20.0
 
         too_high = torch.abs(body_pos_z) > 3.5
 
@@ -514,14 +501,10 @@ class ChickenEnv(DirectRLEnv):
             torch.stack(
                 (
                     torch.norm(self.contact_base.data.net_forces_w, dim=-1) > 0.0,
-                    torch.norm(self.contact_l_leg.data.net_forces_w, dim=-1) > 0.0,
-                    torch.norm(self.contact_r_leg.data.net_forces_w, dim=-1) > 0.0,
-                    torch.norm(self.contact_l_hip.data.net_forces_w, dim=-1) > 0.0,
-                    torch.norm(self.contact_r_hip.data.net_forces_w, dim=-1) > 0.0,
-                    # torch.norm(self.contact_l_thigh.data.net_forces_w, dim=-1) > 0.0,
-                    # torch.norm(self.contact_r_thigh.data.net_forces_w, dim=-1) > 0.0,
-                    torch.norm(self.contact_l_ankle.data.net_forces_w, dim=-1) > 0.0,
-                    torch.norm(self.contact_r_ankle.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_l_knee.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_r_knee.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_l_foot.data.net_forces_w, dim=-1) > 0.0,
+                    torch.norm(self.contact_r_foot.data.net_forces_w, dim=-1) > 0.0,
                 ),
                 dim=1,
             )

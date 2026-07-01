@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import math
+import gymnasium as gym
 
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg
@@ -28,14 +28,15 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    decimation = 2
+
+    decimation = 1
     episode_length_s = 20
     action_space = 8  # command 8 motor positions
 
     history_length = 30
     history_interval = 1
 
-    original_observation_space = 8 + 8 * 2 + 4 + 3 + 3
+    original_observation_space = 8 + 8 * 2 + 4 + 3 + 5
     observation_space = original_observation_space + history_length * original_observation_space
 
     state_space = 0
@@ -54,67 +55,47 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # "ankle"
     # pos_range = [60 * math.pi / 180.0, 110 * math.pi / 180.0, 170 * math.pi / 180.0, 50 * math.pi / 180.0]
 
-    imu_cfg: ImuCfg = ImuCfg(prim_path="/World/envs/env_.*/Robot/chicken/wood")
+    root_str = "/Robot/chicken/"
+
+    imu_cfg: ImuCfg = ImuCfg(prim_path=f"/World/envs/env_.*{root_str}imu")
 
     contact_cfg_r: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/r_foot_pad",
+        prim_path=f"/World/envs/env_.*{root_str}r_foot_pad",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
         track_air_time=True,
     )
     contact_cfg_l: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/l_foot_pad",
+        prim_path=f"/World/envs/env_.*{root_str}l_foot_pad",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
         track_air_time=True,
     )
 
-    contact_cfg_r_leg: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/rm_knee",
+    contact_cfg_r_knee: ContactSensorCfg = ContactSensorCfg(
+        prim_path=f"/World/envs/env_.*{root_str}rm_knee",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
-    contact_cfg_l_leg: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/lm_knee",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-
-    contact_cfg_r_hip: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/r_upper_leg",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-    contact_cfg_l_hip: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/l_upper_leg",
+    contact_cfg_l_knee: ContactSensorCfg = ContactSensorCfg(
+        prim_path=f"/World/envs/env_.*{root_str}lm_knee",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
 
-    contact_cfg_r_thigh: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/r_foot",
+    contact_cfg_r_foot: ContactSensorCfg = ContactSensorCfg(
+        prim_path=f"/World/envs/env_.*{root_str}r_foot",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
-    contact_cfg_l_thigh: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/l_foot",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-
-    contact_cfg_r_ankle: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/r_lower_leg",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-    contact_cfg_l_ankle: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/l_lower_leg",
+    contact_cfg_l_foot: ContactSensorCfg = ContactSensorCfg(
+        prim_path=f"/World/envs/env_.*{root_str}l_foot",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
 
     contact_cfg_base: ContactSensorCfg = ContactSensorCfg(
-        prim_path="/World/envs/env_.*/Robot/chicken/base",
+        prim_path=f"/World/envs/env_.*{root_str}base",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )

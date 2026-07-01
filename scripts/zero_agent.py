@@ -29,13 +29,14 @@ simulation_app = app_launcher.app
 
 """Rest everything follows."""
 
+import omni.usd
+
+import chicken.tasks  # noqa: F401
 import gymnasium as gym
 import torch
 
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils import parse_env_cfg
-
-import chicken.tasks  # noqa: F401
 
 
 def main():
@@ -44,14 +45,26 @@ def main():
     env_cfg = parse_env_cfg(
         args_cli.task, device=args_cli.device, num_envs=args_cli.num_envs, use_fabric=not args_cli.disable_fabric
     )
+
     # create environment
     env = gym.make(args_cli.task, cfg=env_cfg)
+
+    context = omni.usd.get_context()
+    stage = context.get_stage()
+
+    if stage:
+        print("--- Listing Prims in Active Stage ---")
+        for prim in stage.Traverse():
+            print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
+    else:
+        print("No active stage found.")
 
     # print info (this is vectorized environment)
     print(f"[INFO]: Gym observation space: {env.observation_space}")
     print(f"[INFO]: Gym action space: {env.action_space}")
     # reset environment
     env.reset()
+
     # simulate environment
     while simulation_app.is_running():
         # run everything in inference mode
