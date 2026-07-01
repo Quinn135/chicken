@@ -1,0 +1,10 @@
+pyproject.toml
+setup.py
+chicken/__init__.py
+chicken/ui_extension_example.py
+chicken.egg-info/PKG-INFO
+chicken.egg-info/SOURCES.txt
+chicken.egg-info/dependency_links.txt
+chicken.egg-info/not-zip-safe
+chicken.egg-info/requires.txt
+chicken.egg-info/top_level.txt
