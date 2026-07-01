@@ -10,6 +10,8 @@ from collections.abc import Sequence
 
 import torch
 
+import omni.usd
+
 import isaaclab.sim as sim_utils
 from isaaclab.assets import Articulation
 from isaaclab.envs import DirectRLEnv
@@ -84,7 +86,7 @@ class ChickenEnv(DirectRLEnv):
         # self.all_pos_range = torch.tensor(self.pos_range + self.pos_range, device=self.device) / 2.0
 
         # to fix IMU glitch:
-        self.imu._dt = self.sim.get_physics_dt()
+        # self.imu._dt = self.sim.get_physics_dt()
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         # self.last_pos = torch.zeros_like(self.current_pos)
@@ -124,7 +126,7 @@ class ChickenEnv(DirectRLEnv):
         # spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg())
         ground_cfg = CuboidCfg(
             size=(250.0, 250.0, 1.0),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.2, 0.2, 0.2)),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.91, 0.82, 0.9), roughness=0.2, metallic=0.4),
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 static_friction=1.0,
                 dynamic_friction=1.0,
@@ -152,6 +154,17 @@ class ChickenEnv(DirectRLEnv):
             self.scene.filter_collisions(global_prim_paths=[])
 
         self.robot = Articulation(self.cfg.robot_cfg)
+
+        # print prim tree!
+        context = omni.usd.get_context()
+        stage = context.get_stage()
+
+        if stage:
+            print("--- Listing Prims in Active Stage ---")
+            for prim in stage.Traverse():
+                print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
+        else:
+            print("No active stage found.")
 
         self.imu = Imu(self.cfg.imu_cfg)
 
@@ -281,6 +294,7 @@ class ChickenEnv(DirectRLEnv):
             self._sin_cos(self.joint_pos[:, self._r_joint_dof_idxs].flatten(start_dim=-2)),
             self._sin_cos(2.0 * torch.pi * (self.timing_ref)),
             self.imu.data.projected_gravity_b,
+            # torch.zeros((self.num_envs, 3), device=self.device),
             self.target_vel,
             self.target_horiz_vel,
             self.target_yaw_rate,
@@ -365,6 +379,7 @@ class ChickenEnv(DirectRLEnv):
         z_vel = self.lin_vel_w[:, 2]
 
         roll_pitch_vel = self.imu.data.ang_vel_b[:, :2]
+        # roll_pitch_vel = torch.zeros((self.num_envs, 2), device=self.device)
 
         # 1. Grab just the targets you care about
         target_pos = self.robot.data.joint_pos_target[:, self._all_joint_dof_idxs]
@@ -491,7 +506,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = -gravity_local[:, 2] > -0.2
+        tilted_too_much = gravity_local[:, 2] > -0.2
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 20.0
 

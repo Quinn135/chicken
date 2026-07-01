@@ -36,6 +36,7 @@ converter = UrdfConverter(
         usd_file_name=usd_gen_file_name,
         fix_base=False,
         force_usd_conversion=True,
+        merge_fixed_joints=False,
         # root_link_name="base",
         link_density=1250,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
@@ -43,7 +44,7 @@ converter = UrdfConverter(
             target_type="position",
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=20.0, damping=0.5),  #
         ),
-        collision_from_visuals=False,
+        collision_from_visuals=True,
         collider_type="convex_hull",
         make_instanceable=True,
     ),
@@ -62,6 +63,9 @@ CHICKEN_CFG = ArticulationCfg(
             max_depenetration_velocity=100.0,
             enable_gyroscopic_forces=True,
         ),
+        collision_props=sim_utils.CollisionPropertiesCfg(
+            collision_enabled=True,
+        ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=False,
             solver_position_iteration_count=4,
@@ -69,6 +73,7 @@ CHICKEN_CFG = ArticulationCfg(
             sleep_threshold=0.005,
             stabilization_threshold=0.001,
         ),
+        visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.215, 0.223, 0.271), roughness=0.8, metallic=0.1),
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(

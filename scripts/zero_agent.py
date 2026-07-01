@@ -49,15 +49,15 @@ def main():
     # create environment
     env = gym.make(args_cli.task, cfg=env_cfg)
 
-    context = omni.usd.get_context()
-    stage = context.get_stage()
+    # context = omni.usd.get_context()
+    # stage = context.get_stage()
 
-    if stage:
-        print("--- Listing Prims in Active Stage ---")
-        for prim in stage.Traverse():
-            print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
-    else:
-        print("No active stage found.")
+    # if stage:
+    #     print("--- Listing Prims in Active Stage ---")
+    #     for prim in stage.Traverse():
+    #         print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
+    # else:
+    #     print("No active stage found.")
 
     # print info (this is vectorized environment)
     print(f"[INFO]: Gym observation space: {env.observation_space}")

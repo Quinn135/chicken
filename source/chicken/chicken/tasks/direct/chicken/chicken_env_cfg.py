@@ -55,47 +55,48 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # "ankle"
     # pos_range = [60 * math.pi / 180.0, 110 * math.pi / 180.0, 170 * math.pi / 180.0, 50 * math.pi / 180.0]
 
-    root_str = "/Robot/chicken/"
+    root_str = "/Robot"
 
-    imu_cfg: ImuCfg = ImuCfg(prim_path=f"/World/envs/env_.*{root_str}imu")
+    # /root/base/center_mount/stuff_holder
+    imu_cfg: ImuCfg = ImuCfg(prim_path=f"/World/envs/env_.*{root_str}/imu")
 
     contact_cfg_r: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}r_foot_pad",
+        prim_path=f"/World/envs/env_.*{root_str}/r_foot_pad",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
         track_air_time=True,
     )
     contact_cfg_l: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}l_foot_pad",
+        prim_path=f"/World/envs/env_.*{root_str}/l_foot_pad",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
         track_air_time=True,
     )
 
     contact_cfg_r_knee: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}rm_knee",
+        prim_path=f"/World/envs/env_.*{root_str}/rm_knee",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
     contact_cfg_l_knee: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}lm_knee",
+        prim_path=f"/World/envs/env_.*{root_str}/lm_knee",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
 
     contact_cfg_r_foot: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}r_foot",
+        prim_path=f"/World/envs/env_.*{root_str}/r_foot",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
     contact_cfg_l_foot: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}l_foot",
+        prim_path=f"/World/envs/env_.*{root_str}/l_foot",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
 
     contact_cfg_base: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}base",
+        prim_path=f"/World/envs/env_.*{root_str}/base",
         update_period=0.0,
         filter_prim_paths_expr=["/World/ground"],
     )
