@@ -2,8 +2,6 @@
 
 import time
 
-import omni.usd
-
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import DelayedPDActuatorCfg
 
@@ -17,27 +15,26 @@ from isaaclab.sim.converters import UrdfConverter, UrdfConverterCfg
 
 urdf_path = "/workspace/isaaclab/source/chickens/v4 5/urdf/chicken.urdf"
 usd_gen_dir = "/workspace/chicken/chicken/models/usd"
-usd_gen_file_name = f"chicken_{time.time()}.usd"
+usd_gen_file_name = f"chicken_{round(time.time())}.usd"
 print("converting urdf...")
 
-# fix urdf file
-with open(urdf_path) as f:
-    content = f.read()
+# # fix urdf file
+# with open(urdf_path) as f:
+#     content = f.read()
 
-content = content.replace("package://chicken", "..")
-with open(urdf_path, "w") as f:
-    f.write(content)
+# content = content.replace("package://chicken", "..")
+# with open(urdf_path, "w") as f:
+#     f.write(content)
 
 # convert urdf to usd
 converter = UrdfConverter(
     cfg=UrdfConverterCfg(
         asset_path=urdf_path,
         usd_dir=usd_gen_dir,
-        usd_file_name=usd_gen_file_name,
+        usd_file_name=f"{usd_gen_file_name}",
         fix_base=False,
         force_usd_conversion=True,
         merge_fixed_joints=False,
-        # root_link_name="base",
         link_density=1250,
         joint_drive=UrdfConverterCfg.JointDriveCfg(
             drive_type="force",
@@ -45,6 +42,7 @@ converter = UrdfConverter(
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=20.0, damping=0.5),  #
         ),
         collision_from_visuals=True,
+        self_collision=True,
         collider_type="convex_hull",
         make_instanceable=True,
     ),
@@ -78,16 +76,6 @@ CHICKEN_CFG = ArticulationCfg(
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.01),
-        # joint_pos={
-        #     "lr": 0.0,
-        #     "l0": 8.969 * math.pi / 180.0,
-        #     "l1": -18.869 * math.pi / 180.0,
-        #     "l2": -9.901 * math.pi / 180.0,
-        #     "rr": 0.0,
-        #     "r0": -8.969 * math.pi / 180.0,
-        #     "r1": 18.869 * math.pi / 180.0,
-        #     "r2": 9.901 * math.pi / 180.0,
-        # },
         joint_pos={
             "l_side_hip": 0.0,
             "l_hip": 0.0,

@@ -10,8 +10,7 @@ from collections.abc import Sequence
 
 import torch
 
-import omni.usd
-
+# import omni.usd
 import isaaclab.sim as sim_utils
 from isaaclab.assets import Articulation
 from isaaclab.envs import DirectRLEnv
@@ -155,16 +154,17 @@ class ChickenEnv(DirectRLEnv):
 
         self.robot = Articulation(self.cfg.robot_cfg)
 
-        # print prim tree!
-        context = omni.usd.get_context()
-        stage = context.get_stage()
+        # # print prim tree!
+        # # must import omni.usd at the top!
+        # context = omni.usd.get_context()
+        # stage = context.get_stage()
 
-        if stage:
-            print("--- Listing Prims in Active Stage ---")
-            for prim in stage.Traverse():
-                print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
-        else:
-            print("No active stage found.")
+        # if stage:
+        #     print("--- Listing Prims in Active Stage ---")
+        #     for prim in stage.Traverse():
+        #         print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
+        # else:
+        #     print("No active stage found.")
 
         self.imu = Imu(self.cfg.imu_cfg)
 
@@ -443,14 +443,15 @@ class ChickenEnv(DirectRLEnv):
         #     torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -5e-3,
         # ]
         # print(self.robot.data.body_com_pos_w[:, self._body_idxs, 2].mean().item())
+
         neg = [
             # aug
             should_up_l * (1.0 - torch.exp(-torch.square(force_l) / 2000)) * -0.08,
             should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.08,
             should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0]) / 0.2)) * -0.08,
             should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1]) / 0.2)) * -0.08,
-            torch.square(self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten() - self.target_height) * -0.8,
-            torch.square(pitch - self.target_pitch) * -0.1,
+            torch.square(self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten() - self.target_height) * -0.3,
+            torch.square(pitch - self.target_pitch) * -0.3,
             # fixed
             torch.square(z_vel) * -4e-4,
             torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -1e-5,
@@ -561,8 +562,8 @@ class ChickenEnv(DirectRLEnv):
             self.min_target_height, self.max_target_height, (len(env_ids),), device=self.device
         )  # type: ignore
         self.target_pitch[env_ids] = sample_uniform(
-            -torch.pi / 6.0,
-            torch.pi / 6.0,
+            -torch.pi / 12.0,
+            torch.pi / 12.0,
             (len(env_ids),),  # type: ignore
             device=self.device,
         )
