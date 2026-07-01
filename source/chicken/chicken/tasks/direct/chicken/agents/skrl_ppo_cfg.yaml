@@ -69,7 +69,7 @@ agent:
   # time_limit_bootstrap: True
   # logging and checkpoint
   experiment:
-    directory: "chickenv3"
+    directory: "chicken"
     experiment_name: ""
     write_interval: 500
     checkpoint_interval: 5000
@@ -79,5 +79,5 @@ agent:
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
   class: SequentialTrainer
-  timesteps: 500000
+  timesteps: 100000
   environment_info: log

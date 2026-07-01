@@ -210,22 +210,22 @@ class ChickenEnv(DirectRLEnv):
         # )
 
         # force_mag = 35.0 + 40.0 * (self.sim_step_counter > 36000) + 100.0 * (self.sim_step_counter > 48000)
-        # force_mag = 0
-        # target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
-        # num_bodies = len(target_bodies)
+        force_mag = 30
+        target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
+        num_bodies = len(target_bodies)
 
-        # force_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 50.0
+        force_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 50.0
 
-        # forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
-        # torques = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
-        # if force_idxs.any():
-        #     forces[force_idxs] = sample_uniform(
-        #         -force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device
-        #     )
+        forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
+        torques = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
+        if force_idxs.any():
+            forces[force_idxs] = sample_uniform(
+                -force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device
+            )
 
-        #     self.robot.instantaneous_wrench_composer.set_forces_and_torques(
-        #         forces=forces, torques=torques, body_ids=target_bodies
-        #     )
+            self.robot.instantaneous_wrench_composer.set_forces_and_torques(
+                forces=forces, torques=torques, body_ids=target_bodies
+            )
 
         # update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 300.0
         # if update_random_idxs.any():
@@ -507,14 +507,15 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.2
+        tilted_too_much = gravity_local[:, 2] > -0.6
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 20.0
 
         too_high = torch.abs(body_pos_z) > 3.5
 
         touching_ground = (
-            torch.stack(
+            torch
+            .stack(
                 (
                     torch.norm(self.contact_base.data.net_forces_w, dim=-1) > 0.0,
                     torch.norm(self.contact_l_knee.data.net_forces_w, dim=-1) > 0.0,

@@ -42,7 +42,7 @@ converter = UrdfConverter(
             gains=UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=20.0, damping=0.5),  #
         ),
         collision_from_visuals=True,
-        self_collision=True,
+        self_collision=False,
         collider_type="convex_hull",
         make_instanceable=True,
     ),
