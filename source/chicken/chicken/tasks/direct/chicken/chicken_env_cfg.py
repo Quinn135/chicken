@@ -109,5 +109,5 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         replicate_physics=True,
         lazy_sensor_update=True,
         filter_collisions=True,
-        clone_in_fabric=True,
+        # clone_in_fabric=True,
     )
