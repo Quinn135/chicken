@@ -30,12 +30,12 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # env
     num_envs = 4096
 
-    decimation = 4
+    decimation = 3
     episode_length_s = 20
     action_space = 8  # command 8 motor positions
 
-    history_length = 30
-    history_interval = 1
+    history_length = 15
+    history_interval = 2
 
     original_observation_space = 8 + 8 * 2 + 4 + 3 + 5
     history_size = original_observation_space + 8
@@ -44,7 +44,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 240, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(dt=1 / 180, render_interval=decimation)
     render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)

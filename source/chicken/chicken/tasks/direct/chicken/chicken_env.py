@@ -107,7 +107,7 @@ class ChickenEnv(DirectRLEnv):
         # spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg())
         ground_cfg = CuboidCfg(
             size=(250.0, 250.0, 1.0),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.91, 0.82, 0.9), roughness=0.2, metallic=0.4),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.6, 0.5, 0.5), roughness=0.9, metallic=0.4),
             physics_material=sim_utils.RigidBodyMaterialCfg(
                 static_friction=1.1,
                 dynamic_friction=1.0,
@@ -309,11 +309,13 @@ class ChickenEnv(DirectRLEnv):
         ]
 
         height_error = self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten() - self.target_height
+        pitch_error = pitch - self.target_pitch
 
         self.extras["reward_components"] = {
             "vel": pos[0].mean().item(),
             "yaw": pos[1].mean().item(),
             "height_error": height_error.mean().item(),
+            "pitch_error": pitch_error.mean().item(),
         }
 
         # foot_target_height!!!!!!!?
@@ -324,8 +326,8 @@ class ChickenEnv(DirectRLEnv):
             should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.08,
             should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0]) / 0.2)) * -0.08,
             should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1]) / 0.2)) * -0.08,
-            torch.square(height_error) * -0.5,
-            torch.square(pitch - self.target_pitch) * -0.3,
+            torch.exp(-torch.square(height_error) * 50) * -0.2,
+            torch.exp(-torch.square(pitch_error) * 50) * -0.1,
             # fixed
             torch.square(z_vel) * -4e-4,
             torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -1e-5,
