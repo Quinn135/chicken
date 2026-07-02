@@ -16,7 +16,7 @@ models:
       - name: net
         input: OBSERVATIONS
         layers: [512, 256, 128]
-        activations: tanh
+        activations: elu
     output: ACTIONS
   value:  # see deterministic_model parameters
     class: DeterministicMixin
@@ -27,7 +27,7 @@ models:
       - name: net
         input: OBSERVATIONS
         layers: [256, 128]
-        activations: tanh
+        activations: elu
     output: ONE
 
 

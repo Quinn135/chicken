@@ -74,33 +74,31 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         track_air_time=True,
     )
 
-    contact_cfg_r_knee: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}/rm_knee",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-    contact_cfg_l_knee: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}/lm_knee",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-
-    contact_cfg_r_foot: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}/r_foot",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-    contact_cfg_l_foot: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}/l_foot",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
-
-    contact_cfg_base: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}/base",
-        update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
-    )
+    contact_cfgs: dict[str, ContactSensorCfg] = {
+        "l_knee": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/lm_knee",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "r_knee": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/rm_knee",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "l_foot": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/l_foot",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "r_foot": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/r_foot",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "base": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/base", update_period=0.0, filter_prim_paths_expr=["/World/ground"]
+        ),
+    }
     # scene
 
     scene: InteractiveSceneCfg = InteractiveSceneCfg(
@@ -109,5 +107,5 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         replicate_physics=True,
         lazy_sensor_update=True,
         filter_collisions=True,
-        # clone_in_fabric=True,
+        clone_in_fabric=False,
     )

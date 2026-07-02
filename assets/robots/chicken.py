@@ -48,7 +48,6 @@ converter = UrdfConverter(
     ),
 )
 
-
 print("spawning...")
 
 CHICKEN_CFG = ArticulationCfg(
@@ -68,7 +67,7 @@ CHICKEN_CFG = ArticulationCfg(
             enabled_self_collisions=False,
             solver_position_iteration_count=4,
             solver_velocity_iteration_count=1,
-            sleep_threshold=0.005,
+            sleep_threshold=0.0,
             stabilization_threshold=0.001,
         ),
         visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.215, 0.223, 0.271), roughness=0.8, metallic=0.1),
