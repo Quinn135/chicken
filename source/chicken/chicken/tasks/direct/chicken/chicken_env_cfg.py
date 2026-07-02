@@ -30,7 +30,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # env
     num_envs = 4096
 
-    decimation = 3
+    decimation = 2
     episode_length_s = 20
     action_space = 8  # command 8 motor positions
 
@@ -44,7 +44,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 180, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(dt=1 / 240, render_interval=decimation)
     render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)
@@ -112,6 +112,16 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         ),
         "rm_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_hip",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "l_hip": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/l_hip",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "r_hip": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/r_hip",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground"],
         ),

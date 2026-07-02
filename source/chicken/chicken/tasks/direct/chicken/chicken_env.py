@@ -46,10 +46,9 @@ class ChickenEnv(DirectRLEnv):
         # self._last_foot_idxs = [self.robot.find_joints("r2")[0], self.robot.find_joints("l2")[0]]
 
         self._body_idxs = self.robot.find_bodies("imu")[0]
-        # self._body_root_idxs = self.robot.find_bodies("Group_1/root")[0]
-        # self._left_foot_idx = self.robot.find_bodies("legLeft2")[0]
-        # self._right_foot_idx = self.robot.find_bodies("legRight2")[0]
         self._foot_idxs = [self.robot.find_bodies("l_foot_pad")[0], self.robot.find_bodies("r_foot_pad")[0]]
+        self._l_foot_idxs = self.robot.find_bodies("l_foot_pad")[0]
+        self._r_foot_idxs = self.robot.find_bodies("r_foot_pad")[0]
 
         self.joint_pos = self.robot.data.joint_pos
         self.joint_vel = self.robot.data.joint_vel
@@ -61,10 +60,10 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -0.4
-        self.max_target_vel = 0.9
-        self.min_target_horiz_vel = -0.3
-        self.max_target_horiz_vel = 0.3
+        self.min_target_vel = -0.5
+        self.max_target_vel = 0.5
+        self.min_target_horiz_vel = -0.25
+        self.max_target_horiz_vel = 0.25
         # self.max_target_horiz_vel = 0.6
         self.min_target_yaw_rate = -torch.pi / 2.0
         self.max_target_yaw_rate = torch.pi / 2.0
@@ -72,11 +71,11 @@ class ChickenEnv(DirectRLEnv):
 
         # self.zero_target_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_freq = 1.5
-        self.max_freq = 2.5
+        self.min_freq = 0.8
+        self.max_freq = 1.5
 
-        self.min_target_height = 0.25
-        self.max_target_height = 0.35
+        self.min_target_height = 0.325
+        self.max_target_height = 0.375
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -164,7 +163,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 20
+        force_mag = 35
         target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
         num_bodies = len(target_bodies)
 
@@ -318,7 +317,12 @@ class ChickenEnv(DirectRLEnv):
             "pitch_error": pitch_error.mean().item(),
         }
 
-        # foot_target_height!!!!!!!?
+        # foot_target_height!
+        self.target_height = (
+            torch.sin(self.timing_ref[:, 0] / (self.foot_offsets[1] - self.foot_offsets[0]) * torch.pi) * 0.075
+        )
+        self.l_foot_height = self.robot.data.body_com_pos_w[:, self._l_foot_idxs, 2].flatten()
+        self.r_foot_height = self.robot.data.body_com_pos_w[:, self._r_foot_idxs, 2].flatten()
 
         neg = [
             # aug
@@ -326,8 +330,11 @@ class ChickenEnv(DirectRLEnv):
             should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.08,
             should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0]) / 0.2)) * -0.08,
             should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1]) / 0.2)) * -0.08,
-            torch.exp(-torch.square(height_error) * 50) * -0.2,
-            torch.exp(-torch.square(pitch_error) * 50) * -0.1,
+            torch.square(height_error * 4) * -0.2,
+            torch.square(pitch_error * 4) * -0.1,
+            # height tracking
+            should_up_l * torch.square((self.target_height - self.l_foot_height) * 4) * -0.6,
+            should_up_r * torch.square((self.target_height - self.l_foot_height) * 4) * -0.6,
             # fixed
             torch.square(z_vel) * -4e-4,
             torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -1e-5,
@@ -354,7 +361,7 @@ class ChickenEnv(DirectRLEnv):
         time_out = self.episode_length_buf >= self.max_episode_length - 1
 
         body_pos_z = self.current_pos[:, 2]
-        threshold = 0.1
+        threshold = 0.2
         below_threshold = (body_pos_z < threshold) & (body_pos_z != 0.0)
         # print(self.target_height.mean().item(), body_pos_z.mean().item())
 
@@ -363,7 +370,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.4
+        tilted_too_much = gravity_local[:, 2] > -0.7
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 20.0
 
@@ -420,8 +427,8 @@ class ChickenEnv(DirectRLEnv):
             self.min_target_height, self.max_target_height, (env_ids_len,), device=self.device
         )  # type: ignore
         self.target_pitch[env_ids] = sample_uniform(
-            -torch.pi / 12.0,
-            torch.pi / 12.0,
+            -0 / 180.0 * torch.pi,
+            0 / 180.0 * torch.pi,
             (env_ids_len,),  # type: ignore
             device=self.device,
         )
