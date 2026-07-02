@@ -60,21 +60,21 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -0.6
-        self.max_target_vel = 0.9
-        self.min_target_horiz_vel = -0.35
-        self.max_target_horiz_vel = 0.35
+        self.min_target_vel = -1.2
+        self.max_target_vel = 1.2
+        self.min_target_horiz_vel = -0.75
+        self.max_target_horiz_vel = 0.75
         # self.max_target_horiz_vel = 0.6
-        self.min_target_yaw_rate = -torch.pi / 1.5
-        self.max_target_yaw_rate = torch.pi / 1.5
+        self.min_target_yaw_rate = -torch.pi / 1.0
+        self.max_target_yaw_rate = torch.pi / 1.0
         # self.max_target_yaw_rate = torch.pi / 1.5
 
         # self.zero_target_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_freq = 2.0
+        self.min_freq = 0.5
         self.max_freq = 5.0
 
-        self.min_target_height = 0.275
+        self.min_target_height = 0.2
         self.max_target_height = 0.4
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
@@ -100,6 +100,19 @@ class ChickenEnv(DirectRLEnv):
         self.target_pitch = torch.zeros((self.num_envs,), device=self.device)
 
         self.sim_step_counter = 0
+
+        self.is_teleop = False
+
+    def set_teleop_commands(self, v_x, v_y, yaw_rate, height_t, pitch_t, freq_t):
+        """Overrides the environment targets with manual inputs."""
+        self.target_vel[:] = v_x
+        self.target_horiz_vel[:] = v_y
+        self.target_yaw_rate[:] = yaw_rate
+        self.target_height[:] = height_t
+        self.target_pitch[:] = pitch_t
+        self.freq[:] = freq_t
+
+        # print(self.target_vel.mean().item(), self.target_horiz_vel.mean().item(), self.target_yaw_rate.mean().item())
 
     def _setup_scene(self):
         # add ground plane
@@ -180,37 +193,38 @@ class ChickenEnv(DirectRLEnv):
                 forces=forces, torques=torques, body_ids=target_bodies
             )
 
-        update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / (240.0 * 6.0)
-        if update_random_idxs.any():
-            update_env_ids = torch.where(update_random_idxs)[0]
+        if not getattr(self, "is_teleop", False):
+            update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / (240.0 * 6.0)
+            if update_random_idxs.any():
+                update_env_ids = torch.where(update_random_idxs)[0]
 
-            self.target_vel[update_env_ids] = -sample_uniform(
-                self.min_target_vel,
-                self.max_target_vel,
-                (update_random_idxs.sum(), 1),  # type: ignore
-                device=self.device,
-            )
-            self.target_horiz_vel[update_env_ids] = sample_uniform(
-                self.min_target_horiz_vel,
-                self.max_target_horiz_vel,
-                (update_random_idxs.sum(), 1),  # type: ignore
-                device=self.device,
-            )
-            self.target_yaw_rate[update_env_ids] = sample_uniform(
-                self.min_target_yaw_rate,
-                self.max_target_yaw_rate,
-                (update_random_idxs.sum(), 1),  # type: ignore
-                device=self.device,
-            )
-            self.target_pitch[update_env_ids] = sample_uniform(
-                -15 / 180.0 * torch.pi,
-                15 / 180.0 * torch.pi,
-                (update_random_idxs.sum(),),  # type: ignore
-                device=self.device,
-            )
-            self.target_height[update_env_ids] = sample_uniform(
-                self.min_target_height, self.max_target_height, (update_random_idxs.sum(),), device=self.device
-            )
+                self.target_vel[update_env_ids] = -sample_uniform(
+                    self.min_target_vel,
+                    self.max_target_vel,
+                    (update_random_idxs.sum(), 1),  # type: ignore
+                    device=self.device,
+                )
+                self.target_horiz_vel[update_env_ids] = sample_uniform(
+                    self.min_target_horiz_vel,
+                    self.max_target_horiz_vel,
+                    (update_random_idxs.sum(), 1),  # type: ignore
+                    device=self.device,
+                )
+                self.target_yaw_rate[update_env_ids] = sample_uniform(
+                    self.min_target_yaw_rate,
+                    self.max_target_yaw_rate,
+                    (update_random_idxs.sum(), 1),  # type: ignore
+                    device=self.device,
+                )
+                self.target_pitch[update_env_ids] = sample_uniform(
+                    -15 / 180.0 * torch.pi,
+                    15 / 180.0 * torch.pi,
+                    (update_random_idxs.sum(),),  # type: ignore
+                    device=self.device,
+                )
+                self.target_height[update_env_ids] = sample_uniform(
+                    self.min_target_height, self.max_target_height, (update_random_idxs.sum(),), device=self.device
+                )
 
         # update time
         self.timing_ref = self.timing_ref + self.freq.unsqueeze(1) * 1.0 / 120.0 * self.cfg.decimation
@@ -318,7 +332,7 @@ class ChickenEnv(DirectRLEnv):
         l_phase = torch.clamp((self.timing_ref[:, 0] - 0.5) / 0.5, 0.0, 1.0)
         r_phase = torch.clamp((self.timing_ref[:, 1] - 0.5) / 0.5, 0.0, 1.0)
 
-        swing_height = 0.08
+        swing_height = 0.06
 
         l_target = swing_height * torch.sin(torch.pi * l_phase)
         r_target = swing_height * torch.sin(torch.pi * r_phase)
@@ -336,6 +350,7 @@ class ChickenEnv(DirectRLEnv):
             "yaw": pos[1].mean().item(),
             "height_error": height_error.mean().item(),
             "pitch_error": pitch_error.mean().item(),
+            "roll_error": roll_error.mean().item(),
         }
 
         neg = [
@@ -344,12 +359,12 @@ class ChickenEnv(DirectRLEnv):
             should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.2,
             should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0] * 6) / 0.2)) * -0.2,
             should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1] * 6) / 0.2)) * -0.2,
-            torch.square(height_error * 4) * -0.2,
-            torch.square(pitch_error * 2) * -0.1,
-            torch.square(roll_error * 3) * -0.2,
+            torch.square(height_error * 4) * -2.0,
+            torch.square(pitch_error * 2) * -2.0,
+            torch.square(roll_error * 3) * -2.0,
             # height tracking
-            should_up_l * torch.square((self.l_foot_height - l_target) * 6.0) * -0.6,
-            should_up_r * torch.square((self.r_foot_height - r_target) * 6.0) * -0.6,
+            should_up_l * torch.square((self.l_foot_height - l_target) * 3.0) * -1.0,
+            should_up_r * torch.square((self.r_foot_height - r_target) * 3.0) * -1.0,
             # fixed
             torch.square(z_vel) * -4e-4,
             torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -1e-5,
@@ -479,28 +494,33 @@ class ChickenEnv(DirectRLEnv):
         # self.vel_mask[vel_env_ids] = True
         # self.vel_mask[yaw_env_ids] = False
 
-        self.target_vel[env_ids] = sample_uniform(
-            self.min_target_vel,
-            self.max_target_vel,
-            (len(env_ids), 1),  # type: ignore
-            device=self.device,
-        ) * (torch.rand((len(env_ids), 1), device=self.device) > 0.5).float().mul(2.0).sub(1.0)  # type: ignore
-        self.target_horiz_vel[env_ids] = sample_uniform(
-            self.min_target_horiz_vel,
-            self.max_target_horiz_vel,
-            (len(env_ids), 1),  # type: ignore
-            device=self.device,
-        ) * (torch.rand((len(env_ids), 1), device=self.device) > 0.5).float().mul(2.0).sub(1.0)  # type: ignore
-        # self.target_yaw_rate[vel_env_ids] = 0.0
+        if not getattr(self, "is_teleop", False):
+            self.target_vel[env_ids] = sample_uniform(
+                self.min_target_vel,
+                self.max_target_vel,
+                (len(env_ids), 1),  # type: ignore
+                device=self.device,
+            ) * (torch.rand((len(env_ids), 1), device=self.device) > 0.5).float().mul(2.0).sub(1.0)  # type: ignore
+            self.target_horiz_vel[env_ids] = sample_uniform(
+                self.min_target_horiz_vel,
+                self.max_target_horiz_vel,
+                (len(env_ids), 1),  # type: ignore
+                device=self.device,
+            ) * (torch.rand((len(env_ids), 1), device=self.device) > 0.5).float().mul(2.0).sub(1.0)  # type: ignore
+            # self.target_yaw_rate[vel_env_ids] = 0.0
 
-        # self.target_vel[yaw_env_ids] = 0.0
-        # self.target_horiz_vel[yaw_env_ids] = 0.0
-        self.target_yaw_rate[env_ids] = sample_uniform(
-            self.min_target_yaw_rate,
-            self.max_target_yaw_rate,
-            (len(env_ids), 1),  # type: ignore
-            device=self.device,
-        ) * (torch.rand((len(env_ids), 1), device=self.device) > 0.5).float().mul(2.0).sub(1.0)  # type: ignore
+            # self.target_vel[yaw_env_ids] = 0.0
+            # self.target_horiz_vel[yaw_env_ids] = 0.0
+            self.target_yaw_rate[env_ids] = sample_uniform(
+                self.min_target_yaw_rate,
+                self.max_target_yaw_rate,
+                (len(env_ids), 1),  # type: ignore
+                device=self.device,
+            ) * (torch.rand((len(env_ids), 1), device=self.device) > 0.5).float().mul(2.0).sub(1.0)  # type: ignore
+        else:
+            self.target_vel[env_ids] = 0
+            self.target_horiz_vel[env_ids] = 0
+            self.target_yaw_rate[env_ids] = 0
 
         # self.zero_target_vel[env_ids] = (torch.abs(self.target_vel[env_ids]) < 0.1).float()
         # self.target_vel[env_ids] = self.target_vel[env_ids] * self.zero_target_vel[env_ids]

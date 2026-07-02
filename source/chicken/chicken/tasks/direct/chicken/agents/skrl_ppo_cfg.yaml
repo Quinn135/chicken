@@ -71,13 +71,13 @@ agent:
   experiment:
     directory: "chicken"
     experiment_name: ""
-    write_interval: 100
-    checkpoint_interval: 2000
+    write_interval: 500
+    checkpoint_interval: 5000
 
 
 # Sequential trainer
 # https://skrl.readthedocs.io/en/latest/api/trainers/sequential.html
 trainer:
   class: SequentialTrainer
-  timesteps: 100000
+  timesteps: 500000
   environment_info: log
