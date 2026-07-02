@@ -30,7 +30,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # env
     num_envs = 4096
 
-    decimation = 1
+    decimation = 4
     episode_length_s = 20
     action_space = 8  # command 8 motor positions
 
@@ -38,12 +38,13 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     history_interval = 1
 
     original_observation_space = 8 + 8 * 2 + 4 + 3 + 5
-    observation_space = original_observation_space + history_length * original_observation_space
+    history_size = original_observation_space + 8
+    observation_space = original_observation_space + history_length * history_size
 
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(dt=1 / 240, render_interval=decimation)
     render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)
@@ -54,7 +55,6 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # "hip"
     # "knee"
     # "ankle"
-    # pos_range = [60 * math.pi / 180.0, 110 * math.pi / 180.0, 170 * math.pi / 180.0, 50 * math.pi / 180.0]
 
     root_str = "/Robot"
 
@@ -92,6 +92,26 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         ),
         "r_foot": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_foot",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "l_leg": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/l_upper_leg",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "r_leg": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/r_upper_leg",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "lm_hip": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/lm_hip",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground"],
+        ),
+        "rm_hip": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/rm_hip",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground"],
         ),
