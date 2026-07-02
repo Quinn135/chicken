@@ -60,22 +60,22 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -0.5
-        self.max_target_vel = 0.5
-        self.min_target_horiz_vel = -0.25
-        self.max_target_horiz_vel = 0.25
+        self.min_target_vel = -0.6
+        self.max_target_vel = 0.9
+        self.min_target_horiz_vel = -0.35
+        self.max_target_horiz_vel = 0.35
         # self.max_target_horiz_vel = 0.6
-        self.min_target_yaw_rate = -torch.pi / 2.0
-        self.max_target_yaw_rate = torch.pi / 2.0
+        self.min_target_yaw_rate = -torch.pi / 1.5
+        self.max_target_yaw_rate = torch.pi / 1.5
         # self.max_target_yaw_rate = torch.pi / 1.5
 
         # self.zero_target_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_freq = 0.8
-        self.max_freq = 1.5
+        self.min_freq = 2.0
+        self.max_freq = 5.0
 
-        self.min_target_height = 0.325
-        self.max_target_height = 0.375
+        self.min_target_height = 0.275
+        self.max_target_height = 0.4
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -106,10 +106,10 @@ class ChickenEnv(DirectRLEnv):
         # spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg())
         ground_cfg = CuboidCfg(
             size=(250.0, 250.0, 1.0),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.6, 0.5, 0.5), roughness=0.9, metallic=0.4),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.6, 0.5, 0.5), roughness=0.1, metallic=0.5),
             physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.1,
-                dynamic_friction=1.0,
+                static_friction=0.9,
+                dynamic_friction=0.8,
                 restitution=0.05,
             ),
             rigid_props=RigidBodyPropertiesCfg(
@@ -180,7 +180,7 @@ class ChickenEnv(DirectRLEnv):
                 forces=forces, torques=torques, body_ids=target_bodies
             )
 
-        update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 300.0
+        update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / (240.0 * 6.0)
         if update_random_idxs.any():
             update_env_ids = torch.where(update_random_idxs)[0]
 
@@ -201,6 +201,15 @@ class ChickenEnv(DirectRLEnv):
                 self.max_target_yaw_rate,
                 (update_random_idxs.sum(), 1),  # type: ignore
                 device=self.device,
+            )
+            self.target_pitch[update_env_ids] = sample_uniform(
+                -15 / 180.0 * torch.pi,
+                15 / 180.0 * torch.pi,
+                (update_random_idxs.sum(),),  # type: ignore
+                device=self.device,
+            )
+            self.target_height[update_env_ids] = sample_uniform(
+                self.min_target_height, self.max_target_height, (update_random_idxs.sum(),), device=self.device
             )
 
         # update time
@@ -260,8 +269,7 @@ class ChickenEnv(DirectRLEnv):
     def _get_rewards(self) -> torch.Tensor:
         self.sim_step_counter += 1
 
-        pitch, yaw = self.pitch, self.yaw
-        # roll = self.roll
+        roll, pitch, yaw = self.roll, self.pitch, self.yaw
 
         yaw_rate = self.robot.data.body_com_ang_vel_w[:, self._body_idxs, 2].flatten(
             start_dim=-2
@@ -302,13 +310,26 @@ class ChickenEnv(DirectRLEnv):
         should_down_l = self.timing_ref[:, 0] <= 0.5
         should_down_r = self.timing_ref[:, 1] <= 0.5
 
+        height_error = self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten() - self.target_height
+        pitch_error = pitch - self.target_pitch
+        roll_error = roll
+
+        # foot_target_height!
+        l_phase = torch.clamp((self.timing_ref[:, 0] - 0.5) / 0.5, 0.0, 1.0)
+        r_phase = torch.clamp((self.timing_ref[:, 1] - 0.5) / 0.5, 0.0, 1.0)
+
+        swing_height = 0.08
+
+        l_target = swing_height * torch.sin(torch.pi * l_phase)
+        r_target = swing_height * torch.sin(torch.pi * r_phase)
+
+        self.l_foot_height = self.robot.data.body_com_pos_w[:, self._l_foot_idxs, 2].flatten()
+        self.r_foot_height = self.robot.data.body_com_pos_w[:, self._r_foot_idxs, 2].flatten()
+
         pos = [
             torch.exp(-vel_mean_square_error / 0.2) * 0.02,
             torch.exp(-torch.square(yaw_rate - target_yaw_rate) / 0.4) * 0.01,
         ]
-
-        height_error = self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten() - self.target_height
-        pitch_error = pitch - self.target_pitch
 
         self.extras["reward_components"] = {
             "vel": pos[0].mean().item(),
@@ -317,24 +338,18 @@ class ChickenEnv(DirectRLEnv):
             "pitch_error": pitch_error.mean().item(),
         }
 
-        # foot_target_height!
-        self.target_height = (
-            torch.sin(self.timing_ref[:, 0] / (self.foot_offsets[1] - self.foot_offsets[0]) * torch.pi) * 0.075
-        )
-        self.l_foot_height = self.robot.data.body_com_pos_w[:, self._l_foot_idxs, 2].flatten()
-        self.r_foot_height = self.robot.data.body_com_pos_w[:, self._r_foot_idxs, 2].flatten()
-
         neg = [
             # aug
-            should_up_l * (1.0 - torch.exp(-torch.square(force_l) / 2000)) * -0.08,
-            should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.08,
-            should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0]) / 0.2)) * -0.08,
-            should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1]) / 0.2)) * -0.08,
+            should_up_l * (1.0 - torch.exp(-torch.square(force_l) / 2000)) * -0.2,
+            should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.2,
+            should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0] * 6) / 0.2)) * -0.2,
+            should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1] * 6) / 0.2)) * -0.2,
             torch.square(height_error * 4) * -0.2,
-            torch.square(pitch_error * 4) * -0.1,
+            torch.square(pitch_error * 2) * -0.1,
+            torch.square(roll_error * 3) * -0.2,
             # height tracking
-            should_up_l * torch.square((self.target_height - self.l_foot_height) * 4) * -0.6,
-            should_up_r * torch.square((self.target_height - self.l_foot_height) * 4) * -0.6,
+            should_up_l * torch.square((self.l_foot_height - l_target) * 6.0) * -0.6,
+            should_up_r * torch.square((self.r_foot_height - r_target) * 6.0) * -0.6,
             # fixed
             torch.square(z_vel) * -4e-4,
             torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -1e-5,
@@ -425,10 +440,10 @@ class ChickenEnv(DirectRLEnv):
         self.timing_ref[env_ids] = self.foot_offsets
         self.target_height[env_ids] = sample_uniform(
             self.min_target_height, self.max_target_height, (env_ids_len,), device=self.device
-        )  # type: ignore
+        )
         self.target_pitch[env_ids] = sample_uniform(
-            -0 / 180.0 * torch.pi,
-            0 / 180.0 * torch.pi,
+            -15 / 180.0 * torch.pi,
+            15 / 180.0 * torch.pi,
             (env_ids_len,),  # type: ignore
             device=self.device,
         )
