@@ -78,7 +78,7 @@ class ChickenEnv(DirectRLEnv):
         # self.zero_target_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
         self.min_freq = 0.8
-        self.max_freq = 1.4
+        self.max_freq = 2.0
 
         # self.min_target_height = 0.2
         # self.max_target_height = 0.4
@@ -141,7 +141,7 @@ class ChickenEnv(DirectRLEnv):
         #     )
         # )
         ground_cfg = sim_utils.UsdFileCfg(
-            usd_path="/workspace/isaaclab/source/models/env3.usd",
+            usd_path="/workspace/isaaclab/source/models/env5.usd",
             visible=True,
             copy_from_source=True,
             rigid_props=RigidBodyPropertiesCfg(
@@ -160,7 +160,7 @@ class ChickenEnv(DirectRLEnv):
 
         sim_utils.spawn_rigid_body_material(
             "/World/Materials/friction",
-            sim_utils.RigidBodyMaterialCfg(static_friction=0.9, dynamic_friction=0.8, restitution=0.0),
+            sim_utils.RigidBodyMaterialCfg(static_friction=0.95, dynamic_friction=0.8, restitution=0.0),
         )
 
         stage = omni.usd.get_context().get_stage()
@@ -300,7 +300,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 55
+        force_mag = 50
         target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
         num_bodies = len(target_bodies)
 
@@ -468,9 +468,11 @@ class ChickenEnv(DirectRLEnv):
 
         feet_slip = torch.square((force_l > 0.0) * foot_speed[:, 0]) + torch.square((force_r > 0.0) * foot_speed[:, 1])
 
+        target_foot_dist = 0.19
+
         pos = [
             torch.exp(-vel_mean_square_error / 0.2) * 0.02,
-            torch.exp(-torch.square(yaw_rate - target_yaw_rate) / 5.0) * 0.01,
+            torch.exp(-torch.square(yaw_rate - target_yaw_rate) / 0.5) * 0.01,
         ]
 
         self.extras["reward_components"] = {
@@ -503,6 +505,11 @@ class ChickenEnv(DirectRLEnv):
             torch.sum(torch.square(joint_acc), dim=1).flatten() * -5e-9,
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -2e-3,
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -2e-3,
+            # torch.square(
+            #     torch.norm(self.robot.data.body_com_pos_w[:, self._foot_idxs, 2].flatten(start_dim=-2), dim=-1)
+            #     - target_foot_dist
+            # )
+            # * -15,
         ]
 
         total_pos = torch.sum(torch.stack(pos), dim=0)
@@ -528,7 +535,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.2
+        tilted_too_much = gravity_local[:, 2] > -0.6
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 30.0
 

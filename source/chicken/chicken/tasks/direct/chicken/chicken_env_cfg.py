@@ -30,14 +30,18 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    num_envs = 4
+    # num_envs = 4096
+    # num_envs = 64
+    num_envs = 9
 
-    decimation = 1
-    episode_length_s = 20
+    spawn_size = 4.0
+
+    decimation = 2
+    episode_length_s = 15
     action_space = 8  # command 8 motor positions
 
-    history_length = 30
-    history_interval = 1
+    history_length = 45
+    history_interval = 2
 
     original_observation_space = 8 + 8 * 2 + 4 + 3 + 3
     history_size = original_observation_space + action_space
@@ -46,7 +50,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 60, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
     render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)
@@ -117,6 +121,16 @@ class ChickenEnvCfg(DirectRLEnvCfg):
             update_period=0.0,
             # filter_prim_paths_expr=["/World/ground.*"],
         ),
+        "lm_ankle": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/lm_ankle",
+            update_period=0.0,
+            # filter_prim_paths_expr=["/World/ground.*"],
+        ),
+        "rm_ankle": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/rm_ankle",
+            update_period=0.0,
+            # filter_prim_paths_expr=["/World/ground.*"],
+        ),
         "l_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_hip",
             update_period=0.0,
@@ -137,7 +151,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
 
     scene: InteractiveSceneCfg = InteractiveSceneCfg(
         num_envs=num_envs,
-        env_spacing=5.0 / math.sqrt(num_envs),
+        env_spacing=spawn_size / math.sqrt(num_envs),
         replicate_physics=True,
         lazy_sensor_update=True,
         filter_collisions=True,
