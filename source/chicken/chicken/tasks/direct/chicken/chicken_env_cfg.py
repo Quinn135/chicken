@@ -30,23 +30,23 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    num_envs = 1024
+    num_envs = 4
 
-    decimation = 2
+    decimation = 1
     episode_length_s = 20
     action_space = 8  # command 8 motor positions
 
-    history_length = 15
-    history_interval = 2
+    history_length = 30
+    history_interval = 1
 
     original_observation_space = 8 + 8 * 2 + 4 + 3 + 3
-    history_size = original_observation_space + 8
+    history_size = original_observation_space + action_space
     observation_space = original_observation_space + history_length * history_size
 
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(dt=1 / 60, render_interval=decimation)
     render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)
@@ -144,14 +144,14 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         clone_in_fabric=False,
     )
 
-    def __post_init__(self):
-        super().__post_init__()
+    # def __post_init__(self):
+    #     super().__post_init__()
 
-        # # Double the default collision stack size from 64MB to 256MB
-        self.sim.physx.gpu_collision_stack_size = 67108864 * 2
+    # # Double the default collision stack size from 64MB to 256MB
+    # self.sim.physx.gpu_collision_stack_size = 67108864 * 2
 
-        # # # PRO TIP: If you plan to scale to 4000+ envs, you should also increase
-        # # # these other contact buffers now so they don't overflow next!
-        # self.sim.physx.gpu_max_rigid_contact_count = 8388608 * 2  # default is 8388608
-        # self.sim.physx.gpu_max_rigid_patch_count = 163840 * 2  # default is 163840
-        # self.sim.physx.gpu_found_lost_pairs_capacity = 2097152 * 2  # default is 2097152
+    # # # PRO TIP: If you plan to scale to 4000+ envs, you should also increase
+    # # # these other contact buffers now so they don't overflow next!
+    # self.sim.physx.gpu_max_rigid_contact_count = 8388608 * 2  # default is 8388608
+    # self.sim.physx.gpu_max_rigid_patch_count = 163840 * 2  # default is 163840
+    # self.sim.physx.gpu_found_lost_pairs_capacity = 2097152 * 2  # default is 2097152

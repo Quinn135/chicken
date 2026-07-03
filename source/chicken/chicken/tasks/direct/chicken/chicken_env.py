@@ -66,19 +66,19 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -1.2
-        self.max_target_vel = 1.2
-        self.min_target_horiz_vel = -0.75
-        self.max_target_horiz_vel = 0.75
+        self.min_target_vel = -0.6
+        self.max_target_vel = 0.7
+        self.min_target_horiz_vel = -0.4
+        self.max_target_horiz_vel = 0.4
         # self.max_target_horiz_vel = 0.6
-        self.min_target_yaw_rate = -torch.pi / 1.0
-        self.max_target_yaw_rate = torch.pi / 1.0
+        self.min_target_yaw_rate = -torch.pi / 2.0
+        self.max_target_yaw_rate = torch.pi / 2.0
         # self.max_target_yaw_rate = torch.pi / 1.5
 
         # self.zero_target_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_freq = 1.2
-        self.max_freq = 1.8
+        self.min_freq = 0.8
+        self.max_freq = 1.4
 
         # self.min_target_height = 0.2
         # self.max_target_height = 0.4
@@ -141,7 +141,7 @@ class ChickenEnv(DirectRLEnv):
         #     )
         # )
         ground_cfg = sim_utils.UsdFileCfg(
-            usd_path="/workspace/isaaclab/source/models/env0.usd",
+            usd_path="/workspace/isaaclab/source/models/env3.usd",
             visible=True,
             copy_from_source=True,
             rigid_props=RigidBodyPropertiesCfg(
@@ -160,7 +160,7 @@ class ChickenEnv(DirectRLEnv):
 
         sim_utils.spawn_rigid_body_material(
             "/World/Materials/friction",
-            sim_utils.RigidBodyMaterialCfg(static_friction=0.7, dynamic_friction=0.6, restitution=0.0),
+            sim_utils.RigidBodyMaterialCfg(static_friction=0.9, dynamic_friction=0.8, restitution=0.0),
         )
 
         stage = omni.usd.get_context().get_stage()
@@ -169,7 +169,6 @@ class ChickenEnv(DirectRLEnv):
         )
 
         # width = math.sqrt(self.num_envs) * 2.0
-
         # each_width = 15.0
 
         # min_ = -round((width / each_width) + 0.5)
@@ -529,7 +528,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > 1.0
+        tilted_too_much = gravity_local[:, 2] > -0.2
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 30.0
 
