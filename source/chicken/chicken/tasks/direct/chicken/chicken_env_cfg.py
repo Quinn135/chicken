@@ -6,6 +6,8 @@
 
 # import gymnasium as gym
 
+import math
+
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg
 from isaaclab.envs import DirectRLEnvCfg
@@ -28,7 +30,7 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    num_envs = 4096
+    num_envs = 1024
 
     decimation = 2
     episode_length_s = 20
@@ -37,14 +39,14 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     history_length = 15
     history_interval = 2
 
-    original_observation_space = 8 + 8 * 2 + 4 + 3 + 5
+    original_observation_space = 8 + 8 * 2 + 4 + 3 + 3
     history_size = original_observation_space + 8
     observation_space = original_observation_space + history_length * history_size
 
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 240, render_interval=decimation)
+    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
     render_cfg = sim_utils.RenderCfg(rendering_mode="performance")
 
     # robot(s)
@@ -64,13 +66,13 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     contact_cfg_r: ContactSensorCfg = ContactSensorCfg(
         prim_path=f"/World/envs/env_.*{root_str}/r_foot_pad",
         update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
+        # filter_prim_paths_expr=["/World/ground.*"],
         track_air_time=True,
     )
     contact_cfg_l: ContactSensorCfg = ContactSensorCfg(
         prim_path=f"/World/envs/env_.*{root_str}/l_foot_pad",
         update_period=0.0,
-        filter_prim_paths_expr=["/World/ground"],
+        # filter_prim_paths_expr=["/World/ground.*"],
         track_air_time=True,
     )
 
@@ -78,64 +80,78 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         "l_knee": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/lm_knee",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_knee": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_knee",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_foot": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_foot",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_foot": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_foot",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_leg": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_upper_leg",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_leg": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_upper_leg",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "lm_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/lm_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "rm_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "base": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/base", update_period=0.0, filter_prim_paths_expr=["/World/ground"]
+            prim_path=f"/World/envs/env_.*{root_str}/base",
+            update_period=0.0,
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
     }
     # scene
 
     scene: InteractiveSceneCfg = InteractiveSceneCfg(
         num_envs=num_envs,
-        env_spacing=1.5,
+        env_spacing=5.0 / math.sqrt(num_envs),
         replicate_physics=True,
         lazy_sensor_update=True,
         filter_collisions=True,
         clone_in_fabric=False,
     )
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        # # Double the default collision stack size from 64MB to 256MB
+        self.sim.physx.gpu_collision_stack_size = 67108864 * 2
+
+        # # # PRO TIP: If you plan to scale to 4000+ envs, you should also increase
+        # # # these other contact buffers now so they don't overflow next!
+        # self.sim.physx.gpu_max_rigid_contact_count = 8388608 * 2  # default is 8388608
+        # self.sim.physx.gpu_max_rigid_patch_count = 163840 * 2  # default is 163840
+        # self.sim.physx.gpu_found_lost_pairs_capacity = 2097152 * 2  # default is 2097152

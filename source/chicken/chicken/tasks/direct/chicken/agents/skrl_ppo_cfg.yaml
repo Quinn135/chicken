@@ -72,7 +72,7 @@ agent:
     directory: "chicken"
     experiment_name: ""
     write_interval: 500
-    checkpoint_interval: 5000
+    checkpoint_interval: 1000
 
 
 # Sequential trainer

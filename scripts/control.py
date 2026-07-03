@@ -130,12 +130,22 @@ else:
     algorithm = agent_cfg_entry_point.split("_cfg")[0].split("skrl_")[-1].lower()
 
 
+def lerp(a: float, b: float, t: float) -> float:
+    """Linear interpolate on the scale given by a to b, using t as the point on that scale.
+    Examples
+    --------
+        50 == lerp(0, 100, 0.5)
+        4.2 == lerp(1, 5, 0.8)
+    """
+    return (1 - t) * a + t * b
+
+
 @hydra_task_config(args_cli.task, agent_cfg_entry_point)
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, experiment_cfg: dict):
-    """Play with skrl agent."""
+    """Control skrl agent."""
     # grab task name for checkpoint path
     task_name = args_cli.task.split(":")[-1]
-    train_task_name = task_name.replace("-Play", "")
+    train_task_name = task_name.replace("-Control", "")
 
     # override configurations with non-hydra CLI arguments
     env_cfg.scene.num_envs = args_cli.num_envs if args_cli.num_envs is not None else env_cfg.scene.num_envs
@@ -216,7 +226,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     runner.agent.enable_training_mode(False, apply_to_models=True)
 
     print("[INFO] Initializing keyboard teleoperation...")
-    teleop_cfg = Se2KeyboardCfg(v_x_sensitivity=0.8, v_y_sensitivity=0.5, omega_z_sensitivity=1.0)
+    teleop_cfg = Se2KeyboardCfg(v_x_sensitivity=0.7, v_y_sensitivity=0.5, omega_z_sensitivity=torch.pi / 2.0)
 
     teleop_interface = Se2Keyboard(cfg=teleop_cfg)
     teleop_interface.reset()
@@ -224,7 +234,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     slider_state = {
         "pitch": 0.0,
         "height": 0.3,  # A safe default height based on your env
-        "freq": 1.0,  # A safe default walking frequency
+        "freq": 0.5,  # A safe default walking frequency
     }
 
     window = ui.Window("Gait & Posture Tuning", width=300, height=200)
@@ -244,12 +254,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
 
             # Frequency Slider
             ui.Label("Step Frequency (Hz)")
-            freq_slider = ui.FloatSlider(min=0.5, max=5.0)
+            freq_slider = ui.FloatSlider(min=0.3, max=5.0)
             freq_slider.model.set_value(slider_state["freq"])
             freq_slider.model.add_value_changed_fn(lambda m: slider_state.update({"freq": m.as_float}))
 
     if hasattr(env.unwrapped, "is_teleop"):
         env.unwrapped.is_teleop = True
+
+    v_x = 0.0
+    v_y = 0.0
+    yaw_rate = 0.0
 
     # reset environment
     obs, _ = env.reset()
@@ -259,16 +273,22 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     while simulation_app.is_running():
         start_time = time.time()
 
-        # ADD THIS: Get command from keyboard [v_x, v_y, yaw_rate]
-        # W/S = forward/back, A/D = yaw, Q/E = lateral
+        # https://isaac-sim.github.io/IsaacLab/main/source/api/lab/isaaclab.devices.html#game-pad
         teleop_command = teleop_interface.advance()
+        # print(teleop_command)
+        t = 0.2
+        v_x = lerp(v_x, -teleop_command[0], t)
+        v_y = lerp(v_y, teleop_command[1], t)
+        yaw_rate = lerp(yaw_rate, teleop_command[2], t)
+
+        print(v_x, v_y, yaw_rate)
 
         # ADD THIS: Push commands to the environment
         if hasattr(env.unwrapped, "set_teleop_commands"):
             env.unwrapped.set_teleop_commands(
-                v_x=-teleop_command[0],
-                v_y=teleop_command[1],
-                yaw_rate=teleop_command[2],
+                v_x=v_x,
+                v_y=v_y,
+                yaw_rate=yaw_rate,
                 height_t=slider_state["height"],
                 pitch_t=slider_state["pitch"],
                 freq_t=slider_state["freq"],

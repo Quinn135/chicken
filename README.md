@@ -69,6 +69,9 @@ python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0
 
 # Resume Training
 python train.py --task=Isaac-Ai3-Direct-v0 --checkpoint /absolute/dir/to/###.pt
+
+# teleop!
+python scripts/control.py --task=Isaac-Chicken-Robot-v0 --num_envs 1 --real-time
 ```
 
 **Monitoring:**
