@@ -287,8 +287,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
                 v_x=v_x,
                 v_y=v_y,
                 yaw_rate=yaw_rate,
-                height_t=slider_state["height"],
-                pitch_t=slider_state["pitch"],
                 freq_t=slider_state["freq"],
             )
 

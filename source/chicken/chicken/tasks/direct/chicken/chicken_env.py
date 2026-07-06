@@ -101,11 +101,13 @@ class ChickenEnv(DirectRLEnv):
         self.forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
         self.force_time = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
 
+        self.touching_ground = torch.zeros(self.num_envs, device=self.device)
+
         self.sim_step_counter = 0
 
         self.is_teleop = False
 
-    def set_teleop_commands(self, v_x, v_y, yaw_rate, height_t, pitch_t, freq_t):
+    def set_teleop_commands(self, v_x, v_y, yaw_rate, freq_t):
         """Overrides the environment targets with manual inputs."""
         self.target_vel[:] = v_x
         self.target_horiz_vel[:] = v_y
@@ -162,7 +164,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 8
+        force_mag = 8.0 + 7.0 * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -174,7 +176,7 @@ class ChickenEnv(DirectRLEnv):
                 -force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device
             )
             self.force_time[force_idxs] = torch.round(
-                sample_uniform(1, 4, (force_idxs.sum(), num_bodies, 3), device=self.device)
+                sample_uniform(1, 3, (force_idxs.sum(), num_bodies, 3), device=self.device)
             )
 
             self.force_time = self.force_time - torch.ones_like(self.force_time)
@@ -316,10 +318,10 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-8.0 * vel_mse) * 4.0,
+            torch.exp(-8.0 * vel_mse) * 4.5,
+            torch.exp(-0.25 * torch.square(yaw_rate - target_yaw_rate)) * 3.0,
             torch.exp(-8.0 * torch.square(z_vel)) * 1.5,
             torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
-            torch.exp(-2.0 * torch.square(yaw_rate - target_yaw_rate)) * 1.0,
             torch.exp(-15.0 * (torch.square(pitch) + torch.square(roll))) * 1.0,
             # gait height?
             # contact
@@ -332,7 +334,8 @@ class ChickenEnv(DirectRLEnv):
             torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.15,
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.045,
-            torch.any(joint_limit_violation, dim=-2).flatten() * -3.0,
+            torch.any(joint_limit_violation, dim=-2).flatten() * -5.0,
+            self.touching_ground * -7.5,
             # survival
             torch.ones(self.num_envs, device=self.device) * 5.0,
         ]
@@ -353,7 +356,7 @@ class ChickenEnv(DirectRLEnv):
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
         time_out = self.episode_length_buf >= self.max_episode_length - 1
 
-        # body_pos_z = self.current_pos[:, 2]
+        body_pos_z = self.current_pos[:, 2]
         # threshold = 0.2
         # below_threshold = (body_pos_z < threshold) & (body_pos_z != 0.0)
         # print(self.target_height.mean().item(), body_pos_z.mean().item())
@@ -367,33 +370,27 @@ class ChickenEnv(DirectRLEnv):
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 30.0
 
-        # too_high = torch.abs(body_pos_z) > 3.5
+        too_high = torch.abs(body_pos_z) > 3.5
 
-        touching_ground = (
+        self.touching_ground = (
             torch
             .stack(
                 [torch.norm(t.data.net_forces_w, dim=-1) > 0.0 for t in self.contacts],
-                # torch.norm(self.contact_base.data.net_forces_w, dim=-1) > 0.0,
-                # torch.norm(self.contact_l_knee.data.net_forces_w, dim=-1) > 0.0,
-                # torch.norm(self.contact_r_knee.data.net_forces_w, dim=-1) > 0.0,
-                # torch.norm(self.contact_l_foot.data.net_forces_w, dim=-1) > 0.0,
-                # torch.norm(self.contact_r_foot.data.net_forces_w, dim=-1) > 0.0,
                 dim=1,
             )
             .flatten(start_dim=-2)
             .any(dim=-1)
         )
 
-        # xy_speed = torch.norm(self.robot.data.root_lin_vel_w[:, :2], dim=-1)
+        out_of_bounds = (
+            tilted_too_much * (self.sim_step_counter < 20000)
+            | too_fast
+            | too_high
+            | self.touching_ground * (self.sim_step_counter < 20000)
+        )
+        # out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
+        # out_of_bounds = out_of_bounds * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
 
-        # kill it if its not moving!!!!!!!!!!
-        # too_slow = xy_speed < 0.1
-        # grace_period_passed = self.episode_length_buf > 15
-        # lazy_death = too_slow & grace_period_passed
-
-        out_of_bounds = tilted_too_much | too_fast | touching_ground
-        out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
-        # out_of_bounds = tilted_too_much | too_fast | too_high | below_threshold | touching_ground
         if not getattr(self, "is_teleop", False):
             return out_of_bounds, time_out
         return torch.zeros(self.num_envs, dtype=torch.bool, device=self.device), torch.zeros(
@@ -414,23 +411,12 @@ class ChickenEnv(DirectRLEnv):
 
         default_root_state = self.robot.data.default_root_state[env_ids]
         default_root_state[:, :3] += self.scene.env_origins[env_ids]
-        # default_root_state[:, 2] = (10 - torch.norm(default_root_state[:, :2], dim=-1)) / 10.0 * 0.8
 
         self.current_pos[env_ids] = default_root_state[:, :3]
-        # self.last_pos[env_ids] = self.current_pos[env_ids]
         self.history[env_ids] = 0.0
 
         self.freq[env_ids] = sample_uniform(self.min_freq, self.max_freq, (env_ids_len,), device=self.device)
         self.timing_ref[env_ids] = self.foot_offsets
-        # self.target_height[env_ids] = sample_uniform(
-        #     self.min_target_height, self.max_target_height, (env_ids_len,), device=self.device
-        # )
-        # self.target_pitch[env_ids] = sample_uniform(
-        #     -15 / 180.0 * torch.pi,
-        #     15 / 180.0 * torch.pi,
-        #     (env_ids_len,),  # type: ignore
-        #     device=self.device,
-        # )
 
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
@@ -447,21 +433,8 @@ class ChickenEnv(DirectRLEnv):
 
         default_root_state[:, 3:7] = random_rotation_quat
 
-        # FIX 3b: Reset last_yaw and last_action for the newly-reset environments.
-        # Without this, the first step after a reset computed yaw_rate from stale yaw
-        # values (potentially ±π away from the new orientation), producing a huge
-        # spurious spike that poisoned the yaw_reward for that step. Similarly,
-        # last_action carried over gait actions from the previous episode, making
-        # delta_reward wrong on the first step.
-        # self.last_yaw[env_ids] = random_rotation_yaw.squeeze(-1)
         self.last_action[env_ids] = 0.0
         self.last_last_action[env_ids] = 0.0
-
-        # vel_mask = torch.rand(len(env_ids), device=self.device) < 0.5  # type: ignore
-        # vel_env_ids = env_ids[vel_mask]  # type: ignore
-        # yaw_env_ids = env_ids[~vel_mask]  # type: ignore
-        # self.vel_mask[vel_env_ids] = True
-        # self.vel_mask[yaw_env_ids] = False
 
         if not getattr(self, "is_teleop", False):
             self.target_vel[env_ids] = sample_uniform(
