@@ -69,8 +69,8 @@ class ChickenEnv(DirectRLEnv):
         self.max_target_vel = 1.2
         self.min_target_horiz_vel = -0.6
         self.max_target_horiz_vel = 0.6
-        self.min_target_yaw_rate = -torch.pi
-        self.max_target_yaw_rate = torch.pi
+        self.min_target_yaw_rate = -torch.pi / 2.5
+        self.max_target_yaw_rate = torch.pi / 2.5
 
         self.min_freq = 1.8
         self.max_freq = 2.8
@@ -164,7 +164,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 8.0 + 7.0 * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
+        force_mag = 2.0 + 1.0 * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -316,25 +316,35 @@ class ChickenEnv(DirectRLEnv):
 
         feet_slip = should_down_l * foot_speed[:, 0] + should_down_r * foot_speed[:, 1]
 
+        self.touching_ground = (
+            torch
+            .stack(
+                [torch.norm(t.data.net_forces_w, dim=-1) > 0.0 for t in self.contacts],
+                dim=1,
+            )
+            .flatten(start_dim=-2)
+            .any(dim=-1)
+        )
+
         rewards = [
             # task
             torch.exp(-8.0 * vel_mse) * 4.5,
-            torch.exp(-0.25 * torch.square(yaw_rate - target_yaw_rate)) * 3.0,
-            torch.exp(-8.0 * torch.square(z_vel)) * 1.5,
+            torch.exp(-1.25 * torch.square(yaw_rate - target_yaw_rate)) * 3.5,
+            torch.exp(-8.0 * torch.square(z_vel)) * 1.0,
             torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
-            torch.exp(-15.0 * (torch.square(pitch) + torch.square(roll))) * 1.0,
+            torch.exp(-0.1 * (torch.square(pitch) + torch.square(roll))) * 4.0,  # 4
             # gait height?
             # contact
-            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 1.0,
-            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 1.0,
+            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 1.2,
+            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 1.2,
             # reg
-            feet_slip * -1.0,
+            feet_slip * -1.0,  # 7
             torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,
             torch.sum(torch.square(joint_acc), dim=1).flatten() * -2.5e-6,
-            torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,
+            torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,  # 10
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.15,
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.045,
-            torch.any(joint_limit_violation, dim=-2).flatten() * -5.0,
+            torch.any(joint_limit_violation, dim=-2).flatten() * -8.0,  # 13
             self.touching_ground * -7.5,
             # survival
             torch.ones(self.num_envs, device=self.device) * 5.0,
@@ -372,22 +382,8 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 3.5
 
-        self.touching_ground = (
-            torch
-            .stack(
-                [torch.norm(t.data.net_forces_w, dim=-1) > 0.0 for t in self.contacts],
-                dim=1,
-            )
-            .flatten(start_dim=-2)
-            .any(dim=-1)
-        )
-
-        out_of_bounds = (
-            tilted_too_much * (self.sim_step_counter < 20000)
-            | too_fast
-            | too_high
-            | self.touching_ground * (self.sim_step_counter < 20000)
-        )
+        # out_of_bounds = tilted_too_much | too_fast | too_high | self.touching_ground
+        out_of_bounds = too_fast | too_high
         # out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
         # out_of_bounds = out_of_bounds * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
 
@@ -421,10 +417,13 @@ class ChickenEnv(DirectRLEnv):
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
 
+        random_rotation_roll = sample_uniform(-torch.pi / 1.9, torch.pi / 1.9, (env_ids_len, 1), device=self.device)  # type: ignore
+        random_rotation_pitch = sample_uniform(-torch.pi / 1.9, torch.pi / 1.9, (env_ids_len, 1), device=self.device)  # type: ignore
         random_rotation_yaw = sample_uniform(-torch.pi, torch.pi, (env_ids_len, 1), device=self.device)  # type: ignore
         euler_rotation = torch.cat(
             [
-                torch.zeros((env_ids_len, 2), device=self.device),  # type: ignore
+                random_rotation_roll,
+                random_rotation_pitch,
                 random_rotation_yaw,
             ],
             dim=-1,

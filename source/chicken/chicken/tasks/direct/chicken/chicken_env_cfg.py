@@ -133,13 +133,13 @@ class ChickenEnvCfg(DirectRLEnvCfg):
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
-        "lm_knee": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/lm_knee",
+        "lm_side_hip": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/lm_side_hip",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
-        "rm_knee": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/rm_knee",
+        "rm_side_hip": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/rm_side_hip",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
@@ -165,6 +165,11 @@ class ChickenEnvCfg(DirectRLEnvCfg):
         ),
         "base": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/base",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground.*"],
+        ),
+        "part22": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/Part 22",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
