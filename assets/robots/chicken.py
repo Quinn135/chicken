@@ -74,7 +74,7 @@ CHICKEN_CFG = ArticulationCfg(
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.01),
+        pos=(0.0, 0.0, 0.02),
         joint_pos={
             "l_side_hip": 0.0,
             "l_hip": 0.0,
@@ -91,8 +91,8 @@ CHICKEN_CFG = ArticulationCfg(
             joint_names_expr=["r_.*", "l_.*"],
             min_delay=1,
             max_delay=2,
-            effort_limit=12.0,
-            effort_limit_sim=16.0,
+            effort_limit=9.0,
+            effort_limit_sim=12.0,
             velocity_limit=18.0,
             velocity_limit_sim=20.0,
             stiffness=20.0,

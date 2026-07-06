@@ -36,7 +36,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # num_envs = 64
     num_envs = 4096
 
-    spawn_size = 10
+    spawn_size = 5
 
     decimation = 2
     episode_length_s = 25
@@ -168,8 +168,8 @@ class ChickenEnvCfg(DirectRLEnvCfg):
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
-        "part22": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/Part 22",
+        "mass": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/part_22",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),

@@ -96,10 +96,10 @@ class ChickenEnv(DirectRLEnv):
         self.freq = torch.zeros((self.num_envs,), device=self.device)
         self.foot_offsets = torch.tensor([0.0, 0.5], device=self.device)
 
-        target_bodies = self._body_idxs
-        num_bodies = len(target_bodies)
-        self.forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
-        self.force_time = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
+        # target_bodies = self._body_idxs
+        # num_bodies = len(target_bodies)
+        # self.forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
+        # self.force_time = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
 
         self.touching_ground = torch.zeros(self.num_envs, device=self.device)
 
@@ -164,7 +164,33 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 2.0 + 1.0 * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
+        if self.sim_step_counter == 10000:
+            sim_utils.delete_prim("/World/ground")
+            ground_usd_cfg = sim_utils.UsdFileCfg(
+                usd_path="/workspace/isaaclab/source/models/env8.usd",
+                rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                    rigid_body_enabled=True,
+                    kinematic_enabled=True,
+                ),
+                collision_props=sim_utils.CollisionPropertiesCfg(
+                    collision_enabled=True,
+                ),
+                visual_material=sim_utils.PreviewSurfaceCfg(
+                    diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1
+                ),
+                activate_contact_sensors=True,
+            )
+            sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
+
+            physics_material = sim_utils.RigidBodyMaterialCfg(
+                static_friction=0.85,
+                dynamic_friction=0.75,
+                restitution=0.0,
+            )
+            sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
+            sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
+
+        force_mag = 7.0 + 7.0 * (min(max(self.sim_step_counter - 10000, 0.0), 5000.0) / 5000.0)
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -172,20 +198,21 @@ class ChickenEnv(DirectRLEnv):
         torques = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
 
         if force_idxs.any():
-            self.forces[force_idxs] = sample_uniform(
+            forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
+            forces[force_idxs] = sample_uniform(
                 -force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device
             )
-            self.force_time[force_idxs] = torch.round(
-                sample_uniform(1, 3, (force_idxs.sum(), num_bodies, 3), device=self.device)
+            #     self.force_time[force_idxs] = torch.round(
+            #         sample_uniform(1, 3, (force_idxs.sum(), num_bodies, 3), device=self.device)
+            #     )
+
+            #     self.force_time = self.force_time - torch.ones_like(self.force_time)
+
+            # self.forces = self.forces * (self.force_time >= 0)
+
+            self.robot.instantaneous_wrench_composer.set_forces_and_torques(
+                forces=forces, torques=torques, body_ids=target_bodies
             )
-
-            self.force_time = self.force_time - torch.ones_like(self.force_time)
-
-        self.forces = self.forces * (self.force_time >= 0)
-
-        self.robot.instantaneous_wrench_composer.set_forces_and_torques(
-            forces=self.forces, torques=torques, body_ids=target_bodies
-        )
 
         if not getattr(self, "is_teleop", False):
             update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / (120.0 * 10.0)
@@ -328,8 +355,8 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-8.0 * vel_mse) * 4.5,
-            torch.exp(-1.25 * torch.square(yaw_rate - target_yaw_rate)) * 3.5,
+            torch.exp(-8.0 * vel_mse) * 18.0,
+            torch.exp(-1.25 * torch.square(yaw_rate - target_yaw_rate)) * 12.0,
             torch.exp(-8.0 * torch.square(z_vel)) * 1.0,
             torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
             torch.exp(-0.1 * (torch.square(pitch) + torch.square(roll))) * 4.0,  # 4
@@ -364,7 +391,9 @@ class ChickenEnv(DirectRLEnv):
         return reward
 
     def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
-        time_out = self.episode_length_buf >= self.max_episode_length - 1
+        # Per-environment randomized timeout between max_episode_length and max_episode_length + 120
+        rand_offsets = sample_uniform(0.0, 120.0, (self.num_envs,), device=self.device)
+        time_out = self.episode_length_buf >= (self.max_episode_length + rand_offsets) - 1
 
         body_pos_z = self.current_pos[:, 2]
         # threshold = 0.2
@@ -417,8 +446,12 @@ class ChickenEnv(DirectRLEnv):
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
 
-        random_rotation_roll = sample_uniform(-torch.pi / 1.9, torch.pi / 1.9, (env_ids_len, 1), device=self.device)  # type: ignore
-        random_rotation_pitch = sample_uniform(-torch.pi / 1.9, torch.pi / 1.9, (env_ids_len, 1), device=self.device)  # type: ignore
+        random_rotation_roll = sample_uniform(
+            -torch.pi * 30.0 / 180.0, torch.pi * 30.0 / 180.0, (env_ids_len, 1), device=self.device
+        )  # type: ignore
+        random_rotation_pitch = sample_uniform(
+            -torch.pi * 30.0 / 180.0, torch.pi * 30.0 / 180.0, (env_ids_len, 1), device=self.device
+        )  # type: ignore
         random_rotation_yaw = sample_uniform(-torch.pi, torch.pi, (env_ids_len, 1), device=self.device)  # type: ignore
         euler_rotation = torch.cat(
             [
