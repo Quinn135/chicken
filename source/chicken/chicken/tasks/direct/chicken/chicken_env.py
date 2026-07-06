@@ -49,7 +49,6 @@ class ChickenEnv(DirectRLEnv):
             self.robot.find_joints("r_ankle")[0],
         ]
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
-        # self._last_foot_idxs = [self.robot.find_joints("r2")[0], self.robot.find_joints("l2")[0]]
 
         self._body_idxs = self.robot.find_bodies("imu")[0]
         self._foot_idxs = [self.robot.find_bodies("l_foot_pad")[0], self.robot.find_bodies("r_foot_pad")[0]]
@@ -66,24 +65,17 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -0.6
-        self.max_target_vel = 0.8
+        self.min_target_vel = -0.8
+        self.max_target_vel = 1.0
         self.min_target_horiz_vel = -0.4
         self.max_target_horiz_vel = 0.4
-        # self.max_target_horiz_vel = 0.6
         self.min_target_yaw_rate = -torch.pi / 2.0
         self.max_target_yaw_rate = torch.pi / 2.0
-        # self.max_target_yaw_rate = torch.pi / 1.5
 
-        # self.zero_target_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
+        self.min_freq = 1.2
+        self.max_freq = 1.8
 
-        self.min_freq = 1.5
-        self.max_freq = 2.5
-
-        self.target_height = 0.28
-
-        # self.min_target_height = 0.2
-        # self.max_target_height = 0.4
+        # self.target_height = 0.34
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -105,13 +97,9 @@ class ChickenEnv(DirectRLEnv):
         self.foot_offsets = torch.tensor([0.0, 0.5], device=self.device)
 
         target_bodies = self._body_idxs
-        # target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
         num_bodies = len(target_bodies)
         self.forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
         self.force_time = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
-
-        # self.target_height = torch.zeros((self.num_envs,), device=self.device)
-        # self.target_pitch = torch.zeros((self.num_envs,), device=self.device)
 
         self.sim_step_counter = 0
 
@@ -122,140 +110,16 @@ class ChickenEnv(DirectRLEnv):
         self.target_vel[:] = v_x
         self.target_horiz_vel[:] = v_y
         self.target_yaw_rate[:] = yaw_rate
-        # self.target_height[:] = height_t
-        # self.target_pitch[:] = pitch_t
         self.freq[:] = freq_t
 
-        # print(self.target_vel.mean().item(), self.target_horiz_vel.mean().item(), self.target_yaw_rate.mean().item())
-
     def _setup_scene(self):
-        # ground_cfg = sim_utils.UsdFileCfg(
-        #     usd_path="/workspace/isaaclab/source/models/env7.usd",
-        #     visible=True,
-        #     copy_from_source=True,
-        #     rigid_props=RigidBodyPropertiesCfg(
-        #         kinematic_enabled=True,
-        #         rigid_body_enabled=True,
-        #     ),
-        #     collision_props=sim_utils.CollisionPropertiesCfg(),
-        #     activate_contact_sensors=True,
-        # )
-
-        # sim_utils.spawn_from_usd(
-        #     prim_path="/World/ground",
-        #     cfg=ground_cfg,
-        #     translation=(0.0, 0.0, 0.0),
-        # )
-
-        # sim_utils.spawn_rigid_body_material(
-        #     "/World/Materials/friction",
-        #     sim_utils.RigidBodyMaterialCfg(static_friction=0.85, dynamic_friction=0.75, restitution=0.0),
-        # )
-
-        # stage = omni.usd.get_context().get_stage()
-        # physicsUtils.add_physics_material_to_prim(
-        #     stage, stage.GetPrimAtPath("/World/ground"), "/World/Materials/friction"
-        # )
-        # end gooooddddddddddddddddddddddddddddddddd
-
-        # add ground plane
-        # spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg())
-        # TerrainImporter(
-        #     TerrainImporterCfg(
-        #         terrain_type="usd",
-        #         usd_path="/workspace/isaaclab/source/models/chicken env rep 2.usd",
-        #         prim_path="/World/ground",
-        #         env_spacing=5,
-        #         visual_material=sim_utils.PreviewSurfaceCfg(
-        #             diffuse_color=(0.1, 0.1, 0.1), roughness=0.05, metallic=0.1
-        #         ),
-        #         physics_material=sim_utils.RigidBodyMaterialCfg(
-        #             static_friction=0.8, dynamic_friction=0.7, restitution=0.0
-        #         ),
-        #         # collision_props=sim_utils.CollisionPropertiesCfg(),
-        #         # activate_contact_sensors=True,
-        #         debug_vis=False,
-        #     )
-        # )
-
-        # width = math.sqrt(self.num_envs) * 2.0
-        # each_width = 15.0
-
-        # min_ = -round((width / each_width) + 0.5)
-        # max_ = round((width / each_width) + 0.5)
-        # print(min_, max_)
-
-        # # --- 1. Define the base USD config OUTSIDE the loop ---
-        # ground_cfg = sim_utils.UsdFileCfg(
-        #     usd_path="/workspace/isaaclab/source/models/chicken env.usd",
-        #     visible=True,
-        #     copy_from_source=True,
-        #     rigid_props=RigidBodyPropertiesCfg(
-        #         kinematic_enabled=True,
-        #         rigid_body_enabled=True,
-        #     ),
-        #     collision_props=sim_utils.CollisionPropertiesCfg(),
-        #     activate_contact_sensors=True,
-        #     scale=(each_width / 5.0, each_width / 5.0, 1.0),
-        # )
-
-        # # --- 2. Spawn the Friction Materials OUTSIDE the loop ---
-        # sim_utils.spawn_rigid_body_material(
-        #     "/World/Materials/high_friction",
-        #     sim_utils.RigidBodyMaterialCfg(static_friction=1.1, dynamic_friction=1.0, restitution=0.0),
-        # )
-        # sim_utils.spawn_rigid_body_material(
-        #     "/World/Materials/med_friction",
-        #     sim_utils.RigidBodyMaterialCfg(static_friction=0.9, dynamic_friction=0.8, restitution=0.0),
-        # )
-        # sim_utils.spawn_rigid_body_material(
-        #     "/World/Materials/low_friction",
-        #     sim_utils.RigidBodyMaterialCfg(static_friction=0.7, dynamic_friction=0.6, restitution=0.0),
-        # )
-
-        # material_paths = [
-        #     "/World/Materials/high_friction",
-        #     "/World/Materials/med_friction",
-        #     "/World/Materials/low_friction",
-        # ]
-
-        # # Get the active stage to bind materials later
-        # stage = omni.usd.get_context().get_stage()
-
-        # # --- 3. The Spawning Loop ---
-        # for x in range(min_, max_):
-        #     for y in range(min_, max_):
-        #         print(x, y)
-
-        #         x_name = str(x).replace("-", "m")
-        #         y_name = str(y).replace("-", "m")
-        #         prim_path = f"/World/ground_{x_name}_{y_name}"
-
-        #         rand_angle = round(random.random() * 4.0) / 4.0 * 2.0 * math.pi
-
-        #         # Spawn the physical tile
-        #         sim_utils.spawn_from_usd(
-        #             prim_path=prim_path,
-        #             cfg=ground_cfg,
-        #             translation=(x * each_width, y * each_width, 0),
-        #             orientation=(math.cos(rand_angle / 2.0), 0, 0, math.sin(rand_angle / 2.0)),
-        #         )
-
-        #         # Bind a random friction material to this specific tile
-        #         chosen_material_path = random.choice(material_paths)
-        #         tile_prim = stage.GetPrimAtPath(prim_path)
-
-        #         if tile_prim.IsValid():
-        #             physicsUtils.add_physics_material_to_prim(stage, tile_prim, chosen_material_path)
-
-        # ############################### original plane:
         ground_cfg = CuboidCfg(
             size=(250.0, 250.0, 1.0),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.85,
-                dynamic_friction=0.75,
-                restitution=0.05,
+                static_friction=0.9,
+                dynamic_friction=0.8,
+                restitution=0.0,
             ),
             rigid_props=RigidBodyPropertiesCfg(
                 kinematic_enabled=True,
@@ -282,18 +146,6 @@ class ChickenEnv(DirectRLEnv):
         self.robot = Articulation(self.cfg.robot_cfg)
         self.scene.articulations["robot"] = self.robot
 
-        # # print prim tree!
-        # # must import omni.usd at the top!
-        # context = omni.usd.get_context()
-        # stage = context.get_stage()
-
-        # if stage:
-        #     print("--- Listing Prims in Active Stage ---")
-        #     for prim in stage.Traverse():
-        #         print(f"Path: {prim.GetPath()} | Type: {prim.GetTypeName()}")
-        # else:
-        #     print("No active stage found.")
-
         self.imu = Imu(self.cfg.imu_cfg)
         self.scene.sensors["imu"] = self.imu
 
@@ -310,9 +162,8 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 2
+        force_mag = 10
         target_bodies = self._body_idxs
-        # target_bodies = self._body_idxs + self._foot_idxs[0] + self._foot_idxs[1]
         num_bodies = len(target_bodies)
 
         force_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / 400.0
@@ -357,15 +208,6 @@ class ChickenEnv(DirectRLEnv):
                     (update_random_idxs.sum(), 1),  # type: ignore
                     device=self.device,
                 )
-                # self.target_pitch[update_env_ids] = sample_uniform(
-                #     -15 / 180.0 * torch.pi,
-                #     15 / 180.0 * torch.pi,
-                #     (update_random_idxs.sum(),),  # type: ignore
-                #     device=self.device,
-                # )
-                # self.target_height[update_env_ids] = sample_uniform(
-                #     self.min_target_height, self.max_target_height, (update_random_idxs.sum(),), device=self.device
-                # )
 
         # update time
         self.timing_ref = self.timing_ref + self.freq.unsqueeze(1) * 1.0 / 120.0 * self.cfg.decimation
@@ -387,6 +229,9 @@ class ChickenEnv(DirectRLEnv):
         return torch.stack((torch.sin(angles), torch.cos(angles)), dim=-1).flatten(start_dim=-2)
 
     def _get_observations(self) -> dict:
+        self.joint_pos = self.robot.data.joint_pos
+        self.joint_vel = self.robot.data.joint_vel
+
         body_quats = self.robot.data.body_quat_w[:, self._body_idxs, :].flatten(start_dim=-2)
         self.roll, self.pitch, self.yaw = euler_xyz_from_quat(body_quats)
 
@@ -401,12 +246,9 @@ class ChickenEnv(DirectRLEnv):
             self._sin_cos(self.joint_pos[:, self._r_joint_dof_idxs].flatten(start_dim=-2)),
             self._sin_cos(2.0 * torch.pi * (self.timing_ref)),
             self.imu.data.projected_gravity_b,
-            # torch.zeros((self.num_envs, 3), device=self.device),
             self.target_vel,
             self.target_horiz_vel,
             self.target_yaw_rate,
-            # self.target_height,
-            # self.target_pitch,
         )
         obs_data = [t.unsqueeze(-1) if t.dim() == 1 else t for t in obs_data]
 
@@ -426,10 +268,6 @@ class ChickenEnv(DirectRLEnv):
 
         roll, pitch, yaw = self.roll, self.pitch, self.yaw
 
-        yaw_rate = self.robot.data.body_com_ang_vel_w[:, self._body_idxs, 2].flatten(
-            start_dim=-2
-        )  # z-axis = yaw rate, rad/s
-
         target_vel = self.target_vel.flatten()
         target_horiz_vel = self.target_horiz_vel.flatten()
         target_yaw_rate = self.target_yaw_rate.flatten()
@@ -438,13 +276,18 @@ class ChickenEnv(DirectRLEnv):
         target_vel_x = target_vel * torch.cos(yaw + torch.pi / 2.0) + target_horiz_vel * torch.cos(yaw)
         target_vel_y = target_vel * torch.sin(yaw + torch.pi / 2.0) + target_horiz_vel * torch.sin(yaw)
 
-        vel_mean_square_error = (
+        vel_mse = (
             torch.square(self.lin_vel_w[:, 0] - target_vel_x) + torch.square(self.lin_vel_w[:, 1] - target_vel_y)
         ) / 2.0
+
+        yaw_rate = self.robot.data.body_com_ang_vel_w[:, self._body_idxs, 2].flatten(
+            start_dim=-2
+        )  # z-axis = yaw rate, rad/s
 
         z_vel = self.lin_vel_w[:, 2]
 
         roll_pitch_vel = self.imu.data.ang_vel_b[:, :2]
+        ang_vel = torch.norm(roll_pitch_vel, p=2, dim=1)
 
         target_pos = self.robot.data.joint_pos_target[:, self._all_joint_dof_idxs]
         joint_limit_violation = (target_pos > self.upper_limits) | (target_pos < self.lower_limits)
@@ -453,116 +296,53 @@ class ChickenEnv(DirectRLEnv):
         joint_vels = self.robot.data.joint_vel[:, self._all_joint_dof_idxs]
         joint_acc = self.robot.data.joint_acc[:, self._all_joint_dof_idxs]
 
-        foot_vel = self.robot.data.body_com_lin_vel_w[:, self._foot_idxs, :3]
+        # 2d foot speed
+        foot_vel = self.robot.data.body_com_lin_vel_w[:, self._foot_idxs, :2]  # for feet_slip
         foot_speed = torch.norm(foot_vel, dim=-1).flatten(start_dim=-2)
-
-        foot_vel_xy = self.robot.data.body_com_lin_vel_w[:, self._foot_idxs, :2]  # for feet_slip
-        foot_speed_xy = torch.norm(foot_vel_xy, dim=-1).flatten(start_dim=-2)
 
         # Squeeze the trailing body dimension so shapes become (num_envs,) before stacking
         force_l = torch.norm(self.contact_l.data.net_forces_w, dim=-1).squeeze(-1)
         force_r = torch.norm(self.contact_r.data.net_forces_w, dim=-1).squeeze(-1)
 
-        should_up_l = self.timing_ref[:, 0] > 0.5
-        should_up_r = self.timing_ref[:, 1] > 0.5
-        should_down_l = ~should_up_l
-        should_down_r = ~should_up_r
+        should_up_l = (self.timing_ref[:, 0] > 0.5).float()
+        should_up_r = (self.timing_ref[:, 1] > 0.5).float()
+        should_down_l = 1.0 - should_up_l
+        should_down_r = 1.0 - should_up_r
 
-        # print(self.robot.data.body_com_pos_w[:, self._body_idxs, 2].mean().item())
-        height_error = (
-            self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten()
-            # - 0.5
-            # * (
-            #     self.robot.data.body_com_pos_w[:, self._l_foot_idxs, 2].flatten()
-            #     + self.robot.data.body_com_pos_w[:, self._r_foot_idxs, 2].flatten()
-            # )
-        ) - self.target_height
-        # pitch_error = pitch - self.target_pitch
-        pitch_error = pitch
-        roll_error = roll
-
-        # print(
-        #     (
-        #         self.robot.data.body_com_pos_w[:, self._body_idxs, 2].flatten()
-        #         - 0.5
-        #         * (
-        #             self.robot.data.body_com_pos_w[:, self._l_foot_idxs, 2].flatten()
-        #             + self.robot.data.body_com_pos_w[:, self._r_foot_idxs, 2].flatten()
-        #         )
-        #     )
-        #     .mean()
-        #     .item()
-        # )
-
-        # foot_target_height!
-        l_phase = torch.clamp((self.timing_ref[:, 0] - 0.5) / 0.5, 0.0, 1.0)
-        r_phase = torch.clamp((self.timing_ref[:, 1] - 0.5) / 0.5, 0.0, 1.0)
-
-        swing_height = 0.06
-
-        l_target = swing_height * torch.sin(torch.pi * l_phase)
-        r_target = swing_height * torch.sin(torch.pi * r_phase)
-
-        self.l_foot_height = self.robot.data.body_com_pos_w[:, self._l_foot_idxs, 2].flatten() - 0.005
-        self.r_foot_height = self.robot.data.body_com_pos_w[:, self._r_foot_idxs, 2].flatten() - 0.005
-        # print(self.l_foot_height.mean().item())
-
-        # feet_slip = torch.square((force_l > 0.0) * foot_speed[:, 0]) + torch.square((force_r > 0.0) * foot_speed[:, 1])
         contact_weight_l = torch.tanh(force_l / 5.0)  # smoothly ramps 0→1 as force increases
         contact_weight_r = torch.tanh(force_r / 5.0)
-        feet_slip = torch.square(contact_weight_l * foot_speed[:, 0]) + torch.square(
-            contact_weight_r * foot_speed[:, 1]
-        )
 
-        # target_foot_dist = 0.18
+        feet_slip = should_down_l * foot_speed[:, 0] + should_down_r * foot_speed[:, 1]
 
-        pos = [
-            torch.exp(-vel_mean_square_error / 0.2) * 0.02,
-            torch.exp(-torch.square(yaw_rate - target_yaw_rate) / 0.5) * 0.01,
-        ]
-
-        self.extras["reward_components"] = {
-            "vel": pos[0].mean().item(),
-            "yaw": pos[1].mean().item(),
-            "height_error": height_error.mean().item(),
-            "pitch_error": pitch_error.mean().item(),
-            "roll_error": roll_error.mean().item(),
-        }
-
-        neg = [
-            # aug
-            should_up_l * (1.0 - torch.exp(-torch.square(force_l) / 2000)) * -0.25,
-            should_up_r * (1.0 - torch.exp(-torch.square(force_r) / 2000)) * -0.25,
-            should_down_l * (1.0 - torch.exp(-torch.square(foot_speed[:, 0] * 6) / 0.2)) * -0.25,
-            should_down_r * (1.0 - torch.exp(-torch.square(foot_speed[:, 1] * 6) / 0.2)) * -0.25,
-            torch.square(height_error) * -0.1,
-            torch.square(pitch_error) * -0.1,
-            torch.square(roll_error) * -0.1,
-            # height tracking
-            should_up_l * torch.square(self.l_foot_height - l_target) * -0.2,
-            should_up_r * torch.square(self.r_foot_height - r_target) * -0.2,
-            should_down_l * torch.square(self.l_foot_height - 0) * -0.2,
-            should_down_r * torch.square(self.r_foot_height - 0) * -0.2,
-            # fixed
-            torch.square(z_vel) * -4e-1,
-            torch.square(torch.norm(roll_pitch_vel, p=2, dim=1, keepdim=True)).flatten() * -2e-5,
-            feet_slip * -8e-4,
-            torch.any(joint_limit_violation, dim=1).flatten() * -0.2,
-            torch.sum(torch.square(joint_torques), dim=1).flatten() * -2e-5,
+        rewards = [
+            # task
+            torch.exp(-8.0 * vel_mse) * 1.5,
+            torch.exp(-8.0 * torch.square(z_vel)) * 1.0,
+            torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
+            torch.exp(-2.0 * torch.square(yaw_rate - target_yaw_rate)) * 1.0,
+            torch.exp(-15.0 * (torch.square(pitch) + torch.square(roll))) * 1.0,
+            # gait height?
+            # contact
+            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 1.5,
+            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 1.5,
+            # reg
+            feet_slip * -1.0,
+            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,
+            torch.sum(torch.square(joint_acc), dim=1).flatten() * -2.5e-6,
             torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,
-            torch.sum(torch.square(joint_acc), dim=1).flatten() * -5e-9,
-            torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -2e-3,
-            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -2e-3,
-            # torch.square(
-            #     torch.norm(self.robot.data.body_com_pos_w[:, self._foot_idxs, 2].flatten(start_dim=-2), dim=-1)
-            #     - target_foot_dist
-            # )
-            # * -0.001,
+            torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.15,
+            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.045,
+            torch.any(joint_limit_violation, dim=-2).flatten() * -3.0,
+            # survival
+            torch.ones(self.num_envs, device=self.device) * 5.0,
         ]
 
-        total_pos = torch.sum(torch.stack(pos), dim=0)
-        total_neg = torch.sum(torch.stack(neg), dim=0)
-        reward = total_pos * torch.exp(total_neg * 0.02)
+        if self.sim_step_counter % 500 == 0:
+            print("  ")
+            for i, item in enumerate(rewards):
+                print(i, item.mean().item())
+
+        reward = torch.sum(torch.stack(rewards), dim=0)
 
         # update state for next step
         self.last_last_action = self.last_action.clone()
@@ -583,7 +363,7 @@ class ChickenEnv(DirectRLEnv):
             body_quats,
             torch.tensor([0.0, 0.0, -1.0], dtype=torch.float32, device=self.device).repeat(self.num_envs, 1),
         )
-        tilted_too_much = gravity_local[:, 2] > -0.6
+        tilted_too_much = gravity_local[:, 2] > -0.75
 
         too_fast = torch.norm(self.lin_vel_w, dim=-1) > 30.0
 

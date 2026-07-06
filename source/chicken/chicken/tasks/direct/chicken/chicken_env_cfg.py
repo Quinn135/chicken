@@ -35,7 +35,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # num_envs = 64
     num_envs = 4096
 
-    spawn_size = 20
+    spawn_size = 10
 
     decimation = 2
     episode_length_s = 25
