@@ -30,10 +30,10 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    # num_envs = 1
+    num_envs = 1
     # num_envs = 9
     # num_envs = 64
-    num_envs = 4096
+    # num_envs = 4096
 
     spawn_size = 10
 

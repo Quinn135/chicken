@@ -71,7 +71,7 @@ agent:
   experiment:
     directory: "chicken2"
     experiment_name: ""
-    write_interval: 200
+    write_interval: 500
     checkpoint_interval: 2500
 
 

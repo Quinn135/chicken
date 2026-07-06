@@ -66,14 +66,14 @@ class ChickenEnv(DirectRLEnv):
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
         self.min_target_vel = -0.8
-        self.max_target_vel = 1.0
-        self.min_target_horiz_vel = -0.4
-        self.max_target_horiz_vel = 0.4
-        self.min_target_yaw_rate = -torch.pi / 2.0
-        self.max_target_yaw_rate = torch.pi / 2.0
+        self.max_target_vel = 1.2
+        self.min_target_horiz_vel = -0.6
+        self.max_target_horiz_vel = 0.6
+        self.min_target_yaw_rate = -torch.pi
+        self.max_target_yaw_rate = torch.pi
 
-        self.min_freq = 1.2
-        self.max_freq = 1.8
+        self.min_freq = 1.8
+        self.max_freq = 2.8
 
         # self.target_height = 0.34
 
@@ -117,8 +117,8 @@ class ChickenEnv(DirectRLEnv):
             size=(250.0, 250.0, 1.0),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.9,
-                dynamic_friction=0.8,
+                static_friction=0.85,
+                dynamic_friction=0.75,
                 restitution=0.0,
             ),
             rigid_props=RigidBodyPropertiesCfg(
@@ -162,7 +162,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        force_mag = 10
+        force_mag = 8
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -316,15 +316,15 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-8.0 * vel_mse) * 1.5,
-            torch.exp(-8.0 * torch.square(z_vel)) * 1.0,
+            torch.exp(-8.0 * vel_mse) * 4.0,
+            torch.exp(-8.0 * torch.square(z_vel)) * 1.5,
             torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
             torch.exp(-2.0 * torch.square(yaw_rate - target_yaw_rate)) * 1.0,
             torch.exp(-15.0 * (torch.square(pitch) + torch.square(roll))) * 1.0,
             # gait height?
             # contact
-            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 1.5,
-            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 1.5,
+            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 1.0,
+            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 1.0,
             # reg
             feet_slip * -1.0,
             torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,

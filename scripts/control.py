@@ -119,7 +119,7 @@ from isaaclab.devices import Se2Keyboard, Se2KeyboardCfg
 
 import chicken.tasks  # noqa: F401
 
-# import omni.ui as ui
+import omni.ui as ui
 
 # config shortcuts
 if args_cli.agent is None:
@@ -232,31 +232,29 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     teleop_interface.reset()
 
     slider_state = {
-        "pitch": 0.0,
-        "height": 0.3,  # A safe default height based on your env
-        "freq": 0.5,  # A safe default walking frequency
+        "freq": 2.0,  # A safe default walking frequency
     }
 
-    # window = ui.Window("Gait & Posture Tuning", width=300, height=200)
-    # with window.frame:
-    #     with ui.VStack(spacing=8):
-    #         # Pitch Slider
-    #         ui.Label("Target Pitch (rad)")
-    #         pitch_slider = ui.FloatSlider(min=-0.3, max=0.3)
-    #         pitch_slider.model.set_value(slider_state["pitch"])
-    #         pitch_slider.model.add_value_changed_fn(lambda m: slider_state.update({"pitch": m.as_float}))
+    window = ui.Window("Gait & Posture Tuning", width=300, height=200)
+    with window.frame:
+        with ui.VStack(spacing=8):
+            #         # Pitch Slider
+            #         ui.Label("Target Pitch (rad)")
+            #         pitch_slider = ui.FloatSlider(min=-0.3, max=0.3)
+            #         pitch_slider.model.set_value(slider_state["pitch"])
+            #         pitch_slider.model.add_value_changed_fn(lambda m: slider_state.update({"pitch": m.as_float}))
 
-    #         # Height Slider
-    #         ui.Label("Target Height (m)")
-    #         height_slider = ui.FloatSlider(min=0.2, max=0.5)
-    #         height_slider.model.set_value(slider_state["height"])
-    #         height_slider.model.add_value_changed_fn(lambda m: slider_state.update({"height": m.as_float}))
+            #         # Height Slider
+            #         ui.Label("Target Height (m)")
+            #         height_slider = ui.FloatSlider(min=0.2, max=0.5)
+            #         height_slider.model.set_value(slider_state["height"])
+            #         height_slider.model.add_value_changed_fn(lambda m: slider_state.update({"height": m.as_float}))
 
-    #         # Frequency Slider
-    #         ui.Label("Step Frequency (Hz)")
-    #         freq_slider = ui.FloatSlider(min=0.3, max=5.0)
-    #         freq_slider.model.set_value(slider_state["freq"])
-    #         freq_slider.model.add_value_changed_fn(lambda m: slider_state.update({"freq": m.as_float}))
+            # Frequency Slider
+            ui.Label("Step Frequency (Hz)")
+            freq_slider = ui.FloatSlider(min=1.8, max=3.0)
+            freq_slider.model.set_value(slider_state["freq"])
+            freq_slider.model.add_value_changed_fn(lambda m: slider_state.update({"freq": m.as_float}))
 
     if hasattr(env.unwrapped, "is_teleop"):
         env.unwrapped.is_teleop = True

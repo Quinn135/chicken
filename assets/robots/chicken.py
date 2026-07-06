@@ -74,7 +74,7 @@ CHICKEN_CFG = ArticulationCfg(
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.0),
+        pos=(0.0, 0.0, 0.01),
         joint_pos={
             "l_side_hip": 0.0,
             "l_hip": 0.0,
@@ -89,8 +89,8 @@ CHICKEN_CFG = ArticulationCfg(
     actuators={
         "motor_actuator": DelayedPDActuatorCfg(
             joint_names_expr=["r_.*", "l_.*"],
-            min_delay=0,
-            max_delay=0,
+            min_delay=1,
+            max_delay=2,
             effort_limit=20.0,
             effort_limit_sim=25.0,
             velocity_limit=18.0,
