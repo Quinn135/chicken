@@ -164,7 +164,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        if self.sim_step_counter == 25000:
+        if self.sim_step_counter == 25000 or (self.is_teleop and self.sim_step_counter == 40):
             sim_utils.delete_prim("/World/ground")
             ground_usd_cfg = sim_utils.UsdFileCfg(
                 usd_path="/workspace/isaaclab/source/models/env9.usd",

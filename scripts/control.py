@@ -226,7 +226,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     runner.agent.enable_training_mode(False, apply_to_models=True)
 
     print("[INFO] Initializing keyboard teleoperation...")
-    teleop_cfg = Se2KeyboardCfg(v_x_sensitivity=1.2, v_y_sensitivity=0.6, omega_z_sensitivity=torch.pi / 2.5)
+    teleop_cfg = Se2KeyboardCfg(v_x_sensitivity=0.6, v_y_sensitivity=0.6, omega_z_sensitivity=torch.pi / 1.4)
 
     teleop_interface = Se2Keyboard(cfg=teleop_cfg)
     teleop_interface.reset()
