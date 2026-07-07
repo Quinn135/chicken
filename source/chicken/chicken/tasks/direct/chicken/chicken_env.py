@@ -179,6 +179,7 @@ class ChickenEnv(DirectRLEnv):
                     diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1
                 ),
                 activate_contact_sensors=True,
+                scale=(1.5, 1.5, 0.4),
             )
             sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
 
@@ -355,12 +356,12 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-8.0 * vel_mse) * 10.0,
-            torch.exp(-0.15 * torch.square(yaw_rate - target_yaw_rate)) * 7.0,
+            torch.exp(-8.0 * vel_mse) * 15.0,
+            torch.exp(-0.15 * torch.square(yaw_rate - target_yaw_rate)) * 6.0,
             torch.exp(-8.0 * torch.square(z_vel)) * 1.0,
             torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
-            torch.exp(-0.1 * (torch.square(pitch) + torch.square(roll))) * 12.5,  # 4
-            torch.exp(-30.0 * torch.square(self.current_pos[:, 2] - self.target_height)) * 5.0,
+            torch.exp(-0.1 * (torch.square(pitch) + torch.square(roll))) * 3.0,  # 4
+            torch.exp(-30.0 * torch.square(self.current_pos[:, 2] - self.target_height)) * 3.0,
             # gait height?
             # contact
             (1.0 - torch.abs(should_down_l - contact_weight_l)) * 6,
@@ -373,7 +374,7 @@ class ChickenEnv(DirectRLEnv):
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.15,
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.045,
             torch.any(joint_limit_violation, dim=-2).flatten() * -8.0,  # 14
-            self.touching_ground * -7.5,
+            self.touching_ground * -10.0,
             # survival
             torch.ones(self.num_envs, device=self.device) * 5.0,
         ]
