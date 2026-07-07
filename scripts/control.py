@@ -226,13 +226,13 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     runner.agent.enable_training_mode(False, apply_to_models=True)
 
     print("[INFO] Initializing keyboard teleoperation...")
-    teleop_cfg = Se2KeyboardCfg(v_x_sensitivity=0.7, v_y_sensitivity=0.5, omega_z_sensitivity=torch.pi / 2.0)
+    teleop_cfg = Se2KeyboardCfg(v_x_sensitivity=1.2, v_y_sensitivity=0.6, omega_z_sensitivity=torch.pi / 2.5)
 
     teleop_interface = Se2Keyboard(cfg=teleop_cfg)
     teleop_interface.reset()
 
     slider_state = {
-        "freq": 2.0,  # A safe default walking frequency
+        "freq": 3.0,  # A safe default walking frequency
     }
 
     window = ui.Window("Gait & Posture Tuning", width=300, height=200)
@@ -252,7 +252,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
 
             # Frequency Slider
             ui.Label("Step Frequency (Hz)")
-            freq_slider = ui.FloatSlider(min=1.8, max=3.0)
+            freq_slider = ui.FloatSlider(min=2.5, max=3.5)
             freq_slider.model.set_value(slider_state["freq"])
             freq_slider.model.add_value_changed_fn(lambda m: slider_state.update({"freq": m.as_float}))
 

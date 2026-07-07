@@ -65,17 +65,17 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -0.8
-        self.max_target_vel = 1.2
-        self.min_target_horiz_vel = -0.6
-        self.max_target_horiz_vel = 0.6
-        self.min_target_yaw_rate = -torch.pi / 2.5
-        self.max_target_yaw_rate = torch.pi / 2.5
+        self.min_target_vel = -1.2
+        self.max_target_vel = 1.6
+        self.min_target_horiz_vel = -0.8
+        self.max_target_horiz_vel = 0.8
+        self.min_target_yaw_rate = -torch.pi
+        self.max_target_yaw_rate = torch.pi
 
-        self.min_freq = 1.8
-        self.max_freq = 2.8
+        self.min_freq = 2.5
+        self.max_freq = 3.5
 
-        # self.target_height = 0.34
+        self.target_height = 0.36
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -119,8 +119,8 @@ class ChickenEnv(DirectRLEnv):
             size=(250.0, 250.0, 1.0),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.85,
-                dynamic_friction=0.75,
+                static_friction=0.95,
+                dynamic_friction=0.85,
                 restitution=0.0,
             ),
             rigid_props=RigidBodyPropertiesCfg(
@@ -164,10 +164,10 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        if self.sim_step_counter == 10000:
+        if self.sim_step_counter == 25000:
             sim_utils.delete_prim("/World/ground")
             ground_usd_cfg = sim_utils.UsdFileCfg(
-                usd_path="/workspace/isaaclab/source/models/env8.usd",
+                usd_path="/workspace/isaaclab/source/models/env9.usd",
                 rigid_props=sim_utils.RigidBodyPropertiesCfg(
                     rigid_body_enabled=True,
                     kinematic_enabled=True,
@@ -183,14 +183,14 @@ class ChickenEnv(DirectRLEnv):
             sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
 
             physics_material = sim_utils.RigidBodyMaterialCfg(
-                static_friction=0.85,
-                dynamic_friction=0.75,
+                static_friction=0.95,
+                dynamic_friction=0.85,
                 restitution=0.0,
             )
             sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
             sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
 
-        force_mag = 7.0 + 7.0 * (min(max(self.sim_step_counter - 10000, 0.0), 5000.0) / 5000.0)
+        force_mag = 5.0 + 5.0 * (min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -355,23 +355,24 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-8.0 * vel_mse) * 18.0,
-            torch.exp(-1.25 * torch.square(yaw_rate - target_yaw_rate)) * 12.0,
+            torch.exp(-8.0 * vel_mse) * 10.0,
+            torch.exp(-0.15 * torch.square(yaw_rate - target_yaw_rate)) * 7.0,
             torch.exp(-8.0 * torch.square(z_vel)) * 1.0,
             torch.exp(-2.0 * torch.square(ang_vel)) * 0.5,
-            torch.exp(-0.1 * (torch.square(pitch) + torch.square(roll))) * 4.0,  # 4
+            torch.exp(-0.1 * (torch.square(pitch) + torch.square(roll))) * 12.5,  # 4
+            torch.exp(-30.0 * torch.square(self.current_pos[:, 2] - self.target_height)) * 5.0,
             # gait height?
             # contact
-            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 1.2,
-            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 1.2,
+            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 6,
+            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 6,
             # reg
-            feet_slip * -1.0,  # 7
+            feet_slip * -1.0,  # 8
             torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,
             torch.sum(torch.square(joint_acc), dim=1).flatten() * -2.5e-6,
-            torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,  # 10
+            torch.sum(torch.square(joint_vels), dim=1).flatten() * -2e-5,  # 11
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.15,
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.045,
-            torch.any(joint_limit_violation, dim=-2).flatten() * -8.0,  # 13
+            torch.any(joint_limit_violation, dim=-2).flatten() * -8.0,  # 14
             self.touching_ground * -7.5,
             # survival
             torch.ones(self.num_envs, device=self.device) * 5.0,
@@ -399,6 +400,7 @@ class ChickenEnv(DirectRLEnv):
         # threshold = 0.2
         # below_threshold = (body_pos_z < threshold) & (body_pos_z != 0.0)
         # print(self.target_height.mean().item(), body_pos_z.mean().item())
+        # print(body_pos_z.mean().item())
 
         body_quats = self.robot.data.body_quat_w[:, self._body_idxs, :].flatten(start_dim=-2)
         gravity_local = quat_apply_inverse(
