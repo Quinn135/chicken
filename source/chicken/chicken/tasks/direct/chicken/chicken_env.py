@@ -165,7 +165,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        if self.sim_step_counter == 50000 or (self.is_teleop and self.sim_step_counter == 40):
+        if self.sim_step_counter == 60000 or (self.is_teleop and self.sim_step_counter == 40):
             sim_utils.delete_prim("/World/ground")
             ground_usd_cfg = sim_utils.UsdFileCfg(
                 usd_path="/workspace/isaaclab/source/models/env9.usd",
@@ -364,12 +364,12 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-8.0 * vel_mse) * 5,
-            torch.exp(-0.3 * torch.square(yaw_rate - target_yaw_rate)) * 5,
+            torch.exp(-8.0 * vel_mse) * 25,
+            torch.exp(-0.3 * torch.square(yaw_rate - target_yaw_rate)) * 15,
             torch.exp(-2.0 * torch.square(z_vel)) * 3,
             torch.exp(-0.2 * torch.square(ang_vel)) * 2,
             torch.exp(-4.0 * (torch.square(pitch) + torch.square(roll))) * 7,  # 4
-            torch.exp(-100.0 * torch.square(height - self.target_height)) * 7,
+            torch.exp(-50.0 * torch.square(height - self.target_height)) * 25,
             # gait height?
             # contact
             (1.0 - torch.abs(should_down_l - contact_weight_l)) * 6,
