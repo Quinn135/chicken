@@ -39,7 +39,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     spawn_size = 5
 
     decimation = 2
-    episode_length_s = 25
+    episode_length_s = 15
     action_space = 8  # command 8 motor positions
 
     history_length = 30

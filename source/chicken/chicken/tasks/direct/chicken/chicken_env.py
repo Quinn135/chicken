@@ -76,7 +76,7 @@ class ChickenEnv(DirectRLEnv):
         self.min_freq = 2.5
         self.max_freq = 3.5
 
-        self.target_height = 0.365
+        self.target_height = 0.33
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -95,7 +95,9 @@ class ChickenEnv(DirectRLEnv):
         )  # [tl, tr], expressed in obs as sin(2pitl) etc
         # goes between 0 and 1 at frequency desired to walk
         self.freq = torch.zeros((self.num_envs,), device=self.device)
-        self.foot_offsets = torch.tensor([[0.0, 0.5], [0.0, 0.4], [0.0, 0.3], [0.0, 0.0]], device=self.device)
+        self.foot_offsets = torch.tensor(
+            [[0.0, 0.5], [0.0, 0.4], [0.0, 0.3], [0.0, 0.25], [0.0, 0.6], [0.0, 0.7], [0.0, 0.75]], device=self.device
+        )
 
         # target_bodies = self._body_idxs
         # num_bodies = len(target_bodies)
@@ -120,8 +122,8 @@ class ChickenEnv(DirectRLEnv):
             size=(250.0, 250.0, 1.0),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.0,
-                dynamic_friction=0.9,
+                static_friction=0.9,
+                dynamic_friction=0.8,
                 restitution=0.0,
             ),
             rigid_props=RigidBodyPropertiesCfg(
@@ -165,7 +167,7 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        if self.sim_step_counter == 60000 or (self.is_teleop and self.sim_step_counter == 40):
+        if self.sim_step_counter == 75000 or (self.is_teleop and self.sim_step_counter == 40):
             sim_utils.delete_prim("/World/ground")
             ground_usd_cfg = sim_utils.UsdFileCfg(
                 usd_path="/workspace/isaaclab/source/models/env9.usd",
@@ -180,13 +182,13 @@ class ChickenEnv(DirectRLEnv):
                     diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1
                 ),
                 activate_contact_sensors=True,
-                scale=(1.5, 1.5, 0.35),
+                scale=(2.0, 2.0, 0.2),
             )
             sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
 
             physics_material = sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.0,
-                dynamic_friction=0.9,
+                static_friction=0.9,
+                dynamic_friction=0.8,
                 restitution=0.0,
             )
             sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
@@ -369,7 +371,7 @@ class ChickenEnv(DirectRLEnv):
             torch.exp(-2.0 * torch.square(z_vel)) * 3,
             torch.exp(-0.2 * torch.square(ang_vel)) * 2,
             torch.exp(-4.0 * (torch.square(pitch) + torch.square(roll))) * 7,  # 4
-            torch.exp(-50.0 * torch.square(height - self.target_height)) * 25,
+            torch.exp(-50.0 * torch.square(height - self.target_height)) * 15,
             # gait height?
             # contact
             (1.0 - torch.abs(should_down_l - contact_weight_l)) * 6,
@@ -452,16 +454,17 @@ class ChickenEnv(DirectRLEnv):
         self.history[env_ids] = 0.0
 
         self.freq[env_ids] = sample_uniform(self.min_freq, self.max_freq, (env_ids_len,), device=self.device)
-        self.timing_ref[env_ids] = self.foot_offsets[torch.randint(0, 4, (env_ids_len,), device=self.device)]
+        # self.timing_ref[env_ids] = self.foot_offsets[torch.randint(0, 7, (env_ids_len,), device=self.device)]
+        self.timing_ref[env_ids] = self.foot_offsets[0]
 
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
 
         random_rotation_roll = sample_uniform(
-            -torch.pi * 30.0 / 180.0, torch.pi * 30.0 / 180.0, (env_ids_len, 1), device=self.device
+            -torch.pi * 100.0 / 180.0, torch.pi * 100.0 / 180.0, (env_ids_len, 1), device=self.device
         )  # type: ignore
         random_rotation_pitch = sample_uniform(
-            -torch.pi * 30.0 / 180.0, torch.pi * 30.0 / 180.0, (env_ids_len, 1), device=self.device
+            -torch.pi * 100.0 / 180.0, torch.pi * 100.0 / 180.0, (env_ids_len, 1), device=self.device
         )  # type: ignore
         random_rotation_yaw = sample_uniform(-torch.pi, torch.pi, (env_ids_len, 1), device=self.device)  # type: ignore
         euler_rotation = torch.cat(
