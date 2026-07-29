@@ -28,7 +28,6 @@ from isaaclab.sim.spawners.shapes import CuboidCfg, spawn_cuboid
 from isaaclab.utils.math import euler_xyz_from_quat, quat_apply_inverse, quat_from_euler_xyz, sample_uniform
 
 from .chicken_env_cfg import ChickenEnvCfg
-import math
 
 
 class ChickenEnv(DirectRLEnv):
@@ -51,7 +50,7 @@ class ChickenEnv(DirectRLEnv):
         ]
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
 
-        self._body_idxs = self.robot.find_bodies("imu")[0]
+        self._body_idxs = self.robot.find_bodies("electronics")[0]
         self._foot_idxs = [self.robot.find_bodies("l_foot_pad")[0], self.robot.find_bodies("r_foot_pad")[0]]
         self._l_foot_idxs = self.robot.find_bodies("l_foot_pad")[0]
         self._r_foot_idxs = self.robot.find_bodies("r_foot_pad")[0]
@@ -424,8 +423,8 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 3.5
 
-        # out_of_bounds = tilted_too_much | too_fast | too_high | self.touching_ground
-        out_of_bounds = too_fast | too_high
+        out_of_bounds = tilted_too_much | too_fast | too_high | (self.touching_ground != 0)
+        # out_of_bounds = too_fast | too_high
         # out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
         # out_of_bounds = out_of_bounds * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
 
@@ -461,10 +460,10 @@ class ChickenEnv(DirectRLEnv):
         self.joint_vel[env_ids] = joint_vel
 
         random_rotation_roll = sample_uniform(
-            -torch.pi * 100.0 / 180.0, torch.pi * 100.0 / 180.0, (env_ids_len, 1), device=self.device
+            -torch.pi * 20.0 / 180.0, torch.pi * 20.0 / 180.0, (env_ids_len, 1), device=self.device
         )  # type: ignore
         random_rotation_pitch = sample_uniform(
-            -torch.pi * 100.0 / 180.0, torch.pi * 100.0 / 180.0, (env_ids_len, 1), device=self.device
+            -torch.pi * 20.0 / 180.0, torch.pi * 20.0 / 180.0, (env_ids_len, 1), device=self.device
         )  # type: ignore
         random_rotation_yaw = sample_uniform(-torch.pi, torch.pi, (env_ids_len, 1), device=self.device)  # type: ignore
         euler_rotation = torch.cat(

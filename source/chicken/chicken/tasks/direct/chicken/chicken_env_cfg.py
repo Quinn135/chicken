@@ -30,11 +30,11 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    num_envs = 1
+    # num_envs = 1
     # num_envs = 2
     # num_envs = 9
     # num_envs = 64
-    # num_envs = 4096
+    num_envs = 4096
 
     spawn_size = 5
 
@@ -67,7 +67,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     root_str = "/Robot"
 
     # /root/base/center_mount/stuff_holder
-    imu_cfg: ImuCfg = ImuCfg(prim_path=f"/World/envs/env_.*{root_str}/imu")
+    imu_cfg: ImuCfg = ImuCfg(prim_path=f"/World/envs/env_.*{root_str}/electronics")
 
     contact_cfg_r: ContactSensorCfg = ContactSensorCfg(
         prim_path=f"/World/envs/env_.*{root_str}/r_foot_pad",
@@ -169,7 +169,22 @@ class ChickenEnvCfg(DirectRLEnvCfg):
             filter_prim_paths_expr=["/World/ground.*"],
         ),
         "mass": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/part_22",
+            prim_path=f"/World/envs/env_.*{root_str}/weight",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground.*"],
+        ),
+        "box": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/bodybox",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground.*"],
+        ),
+        "batf": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/batfront",
+            update_period=0.0,
+            filter_prim_paths_expr=["/World/ground.*"],
+        ),
+        "batb": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/batback",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
