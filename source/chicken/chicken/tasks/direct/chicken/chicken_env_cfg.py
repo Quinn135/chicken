@@ -168,8 +168,8 @@ class ChickenEnvCfg(DirectRLEnvCfg):
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),
-        "mass": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/weight",
+        "boxlid": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/bodyboxlid",
             update_period=0.0,
             filter_prim_paths_expr=["/World/ground.*"],
         ),

@@ -13,7 +13,7 @@ from isaaclab.sim.converters import UrdfConverter, UrdfConverterCfg
 # Configuration
 ##
 
-urdf_path = "/workspace/isaaclab/source/chickens/v6 1/urdf/chicken.urdf"
+urdf_path = "/workspace/isaaclab/source/chickens/v6 3/urdf/chicken.urdf"
 usd_gen_dir = "/workspace/chicken/chicken/models/usd"
 usd_gen_file_name = f"chicken_{round(time.time())}.usd"
 print("converting urdf...")

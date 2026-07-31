@@ -429,7 +429,9 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 3.5
 
-        out_of_bounds = tilted_too_much | too_fast | too_high | (self.touching_ground != 0)
+        out_of_bounds = (
+            tilted_too_much | too_fast | too_high | ((self.touching_ground != 0) & (self.episode_length_buf > 70))
+        )
         # out_of_bounds = too_fast | too_high
         # out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
         # out_of_bounds = out_of_bounds * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
@@ -466,8 +468,8 @@ class ChickenEnv(DirectRLEnv):
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
 
-        if False:
-            # if self.sim_step_counter < 5000:
+        # if False:
+        if self.sim_step_counter < 5000:
             random_rotation_roll = sample_uniform(
                 -torch.pi * 20.0 / 180.0, torch.pi * 20.0 / 180.0, (env_ids_len, 1), device=self.device
             )  # type: ignore
@@ -476,10 +478,10 @@ class ChickenEnv(DirectRLEnv):
             )  # type: ignore
         else:
             random_rotation_roll = sample_uniform(
-                -torch.pi * 60.0 / 180.0, torch.pi * 60.0 / 180.0, (env_ids_len, 1), device=self.device
+                -torch.pi * 40.0 / 180.0, torch.pi * 40.0 / 180.0, (env_ids_len, 1), device=self.device
             )  # type: ignore
             random_rotation_pitch = sample_uniform(
-                -torch.pi * 60.0 / 180.0, torch.pi * 60.0 / 180.0, (env_ids_len, 1), device=self.device
+                -torch.pi * 40.0 / 180.0, torch.pi * 40.0 / 180.0, (env_ids_len, 1), device=self.device
             )  # type: ignore
         random_rotation_yaw = sample_uniform(-torch.pi, torch.pi, (env_ids_len, 1), device=self.device)  # type: ignore
         euler_rotation = torch.cat(
