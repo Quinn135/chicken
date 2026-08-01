@@ -65,17 +65,17 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -1.5
-        self.max_target_vel = 1.5
-        self.min_target_horiz_vel = -1.5
-        self.max_target_horiz_vel = 1.5
-        self.min_target_yaw_rate = -torch.pi
-        self.max_target_yaw_rate = torch.pi
+        self.min_target_vel = -1
+        self.max_target_vel = 1
+        self.min_target_horiz_vel = -1
+        self.max_target_horiz_vel = 1
+        self.min_target_yaw_rate = -torch.pi * 0.8
+        self.max_target_yaw_rate = torch.pi * 0.8
 
         self.min_freq = 2.5
         self.max_freq = 3.5
 
-        self.target_height = 0.48
+        self.target_height = 0.43
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -376,8 +376,7 @@ class ChickenEnv(DirectRLEnv):
             torch.exp(-2.0 * torch.square(z_vel)) * 1.5,  # 2
             torch.exp(-0.2 * torch.square(ang_vel)) * 1.5,  # 3
             torch.exp(-4.0 * (torch.square(pitch) + torch.square(roll))) * 2,  # 4
-            # torch.exp(-50.0 * torch.square(height - self.target_height)) * 2,  # 5
-            torch.ones(self.num_envs, device=self.device) * 5.0,  # 5
+            torch.exp(-50.0 * torch.square(height - self.target_height)) * 4,  # 5
             # gait height?
             # contact
             (1.0 - torch.abs(should_down_l - contact_weight_l)) * 3,  # 6
@@ -391,6 +390,7 @@ class ChickenEnv(DirectRLEnv):
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.06,  # 13
             torch.any(joint_limit_violation, dim=-2).flatten() * -15.0,  # 14
             self.touching_ground * -7.5,  # 15
+            torch.ones(self.num_envs, device=self.device) * 5.0,  # 16
         ]
 
         if self.sim_step_counter % 500 == 0 and not self.is_teleop:
