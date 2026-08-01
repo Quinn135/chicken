@@ -376,22 +376,21 @@ class ChickenEnv(DirectRLEnv):
             torch.exp(-2.0 * torch.square(z_vel)) * 1.5,  # 2
             torch.exp(-0.2 * torch.square(ang_vel)) * 1.5,  # 3
             torch.exp(-4.0 * (torch.square(pitch) + torch.square(roll))) * 2,  # 4
-            torch.exp(-50.0 * torch.square(height - self.target_height)) * 2,  # 5
+            # torch.exp(-50.0 * torch.square(height - self.target_height)) * 2,  # 5
+            torch.ones(self.num_envs, device=self.device) * 5.0,  # 5
             # gait height?
             # contact
             (1.0 - torch.abs(should_down_l - contact_weight_l)) * 3,  # 6
             (1.0 - torch.abs(should_down_r - contact_weight_r)) * 3,  # 7
             # reg
             feet_slip * -5,  # 8
-            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,  # 9
-            torch.sum(torch.square(joint_acc), dim=1).flatten() * -1.5e-6,  # 10
-            torch.sum(torch.square(joint_vels), dim=1).flatten() * -5e-4,  # 11
-            torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.15,  # 12
-            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.045,  # 13
+            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-2,  # 9
+            torch.sum(torch.square(joint_acc), dim=1).flatten() * -1.5e-5,  # 10
+            torch.sum(torch.square(joint_vels), dim=1).flatten() * -5e-3,  # 11
+            torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.25,  # 12
+            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.06,  # 13
             torch.any(joint_limit_violation, dim=-2).flatten() * -15.0,  # 14
             self.touching_ground * -7.5,  # 15
-            # survival
-            torch.ones(self.num_envs, device=self.device) * 5.0,  # 16
         ]
 
         if self.sim_step_counter % 500 == 0 and not self.is_teleop:
