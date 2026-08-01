@@ -13,7 +13,7 @@ from isaaclab.sim.converters import UrdfConverter, UrdfConverterCfg
 # Configuration
 ##
 
-urdf_path = "/workspace/isaaclab/source/chickens/v6 3/urdf/chicken.urdf"
+urdf_path = "/workspace/isaaclab/source/chickens/v6 4/urdf/chicken.urdf"
 usd_gen_dir = "/workspace/chicken/chicken/models/usd"
 usd_gen_file_name = f"chicken_{round(time.time())}.usd"
 print("converting urdf...")
@@ -91,16 +91,16 @@ CHICKEN_CFG = ArticulationCfg(
             joint_names_expr=["r_.*", "l_.*"],
             min_delay=1,
             max_delay=2,
-            effort_limit=7.0,
-            effort_limit_sim=9.0,
-            velocity_limit=20.0,
-            velocity_limit_sim=24.0,
+            effort_limit=12.0,
+            effort_limit_sim=15.0,
+            velocity_limit=30.0,
+            velocity_limit_sim=35.0,
             stiffness=20.0,
             damping=0.5,
-            armature=0.05,
-            friction=0.05,
-            dynamic_friction=0.04,
-            viscous_friction=0.05,
+            armature=0.01,
+            friction=0.02,
+            dynamic_friction=0.01,
+            viscous_friction=0.02,
         ),
     },
 )
