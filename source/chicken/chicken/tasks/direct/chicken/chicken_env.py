@@ -157,6 +157,8 @@ class ChickenEnv(DirectRLEnv):
         self.scene.sensors["contact_l"] = self.contact_l
         self.contact_r = ContactSensor(self.cfg.contact_cfg_r)
         self.scene.sensors["contact_r"] = self.contact_r
+        self.contact_ft = ContactSensor(self.cfg.contact_cfg_ft)
+        self.scene.sensors["contact_ft"] = self.contact_ft
 
         self.contacts: list[ContactSensor] = []
         for key, value in self.cfg.contact_cfgs.items():
@@ -342,6 +344,8 @@ class ChickenEnv(DirectRLEnv):
         force_l = torch.norm(self.contact_l.data.net_forces_w, dim=-1).squeeze(-1)
         force_r = torch.norm(self.contact_r.data.net_forces_w, dim=-1).squeeze(-1)
 
+        ft_touch = torch.norm(self.contact_ft.data.net_forces_w, dim=-1).squeeze(-1) > 0.0
+
         should_up_l = (self.timing_ref[:, 0] > 0.5).float()
         should_up_r = (self.timing_ref[:, 1] > 0.5).float()
         should_down_l = 1.0 - should_up_l
@@ -390,6 +394,7 @@ class ChickenEnv(DirectRLEnv):
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.06,  # 13
             torch.any(joint_limit_violation, dim=-2).flatten() * -15.0,  # 14
             self.touching_ground * -7.5,  # 15
+            ft_touch * -25.0,
             torch.ones(self.num_envs, device=self.device) * 5.0,  # 16
         ]
 

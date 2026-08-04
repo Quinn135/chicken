@@ -44,6 +44,12 @@ git clone https://github.com/Quinn135/chicken.git .
 python -m pip install -e source/chicken
 ```
 
+If somehow it's broken (isaaclab not found), this might help:
+```bash
+cd /workspace/chicken
+/isaac-sim/python.sh -m pip install -e /workspace/isaaclab/source/isaaclab
+```
+
 ## 3. VS Code Integration
 
 1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
