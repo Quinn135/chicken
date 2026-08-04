@@ -65,17 +65,18 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -1
-        self.max_target_vel = 1
+        self.min_target_vel = -1.2
+        self.max_target_vel = 1.2
         self.min_target_horiz_vel = -1
         self.max_target_horiz_vel = 1
-        self.min_target_yaw_rate = -torch.pi * 0.8
-        self.max_target_yaw_rate = torch.pi * 0.8
+        self.min_target_yaw_rate = -torch.pi
+        self.max_target_yaw_rate = torch.pi
 
-        self.min_freq = 2.5
+        self.min_freq = 2.0
         self.max_freq = 3.5
 
         self.target_height = 0.43
+        self.sway_amplitude = 0.25
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
@@ -117,22 +118,46 @@ class ChickenEnv(DirectRLEnv):
         self.freq[:] = freq_t
 
     def _setup_scene(self):
-        ground_cfg = CuboidCfg(
-            size=(250.0, 250.0, 1.0),
-            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.0,
-                dynamic_friction=0.9,
-                restitution=0.0,
-            ),
-            rigid_props=RigidBodyPropertiesCfg(
-                kinematic_enabled=True,
+        # ground_cfg = CuboidCfg(
+        #     size=(250.0, 250.0, 1.0),
+        #     visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
+        #     physics_material=sim_utils.RigidBodyMaterialCfg(
+        #         static_friction=1.0,
+        #         dynamic_friction=0.9,
+        #         restitution=0.0,
+        #     ),
+        #     rigid_props=RigidBodyPropertiesCfg(
+        #         kinematic_enabled=True,
+        #         rigid_body_enabled=True,
+        #     ),
+        #     activate_contact_sensors=True,
+        #     collision_props=sim_utils.CollisionPropertiesCfg(),
+        # )
+        # spawn_cuboid(prim_path="/World/ground", cfg=ground_cfg, translation=(0.0, 0.0, -0.5))
+
+        sim_utils.delete_prim("/World/ground")
+        ground_usd_cfg = sim_utils.UsdFileCfg(
+            usd_path="/workspace/isaaclab/source/models/env9.usd",
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
                 rigid_body_enabled=True,
+                kinematic_enabled=True,
             ),
+            collision_props=sim_utils.CollisionPropertiesCfg(
+                collision_enabled=True,
+            ),
+            visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             activate_contact_sensors=True,
-            collision_props=sim_utils.CollisionPropertiesCfg(),
+            scale=(2.5, 2.5, 0.4),
         )
-        spawn_cuboid(prim_path="/World/ground", cfg=ground_cfg, translation=(0.0, 0.0, -0.5))
+        sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
+
+        physics_material = sim_utils.RigidBodyMaterialCfg(
+            static_friction=1.0,
+            dynamic_friction=0.9,
+            restitution=0.0,
+        )
+        sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
+        sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
 
         # add lights
         light_cfg = sim_utils.DistantLightCfg(intensity=3000.0, color=(1.0, 1.0, 1.0), angle=34.3)
@@ -153,6 +178,8 @@ class ChickenEnv(DirectRLEnv):
         self.imu = Imu(self.cfg.imu_cfg)
         self.scene.sensors["imu"] = self.imu
 
+        # print(self.robot.body_names)
+
         self.contact_l = ContactSensor(self.cfg.contact_cfg_l)
         self.scene.sensors["contact_l"] = self.contact_l
         self.contact_r = ContactSensor(self.cfg.contact_cfg_r)
@@ -168,32 +195,32 @@ class ChickenEnv(DirectRLEnv):
     def _pre_physics_step(self, actions: torch.Tensor) -> None:
         self.actions = actions.clone()
 
-        if self.sim_step_counter == 3500 or (self.is_teleop and self.sim_step_counter == 40):
-            sim_utils.delete_prim("/World/ground")
-            ground_usd_cfg = sim_utils.UsdFileCfg(
-                usd_path="/workspace/isaaclab/source/models/env9.usd",
-                rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                    rigid_body_enabled=True,
-                    kinematic_enabled=True,
-                ),
-                collision_props=sim_utils.CollisionPropertiesCfg(
-                    collision_enabled=True,
-                ),
-                visual_material=sim_utils.PreviewSurfaceCfg(
-                    diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1
-                ),
-                activate_contact_sensors=True,
-                scale=(2.0, 2.0, 0.3),
-            )
-            sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
+        # if self.sim_step_counter == 3500 or (self.is_teleop and self.sim_step_counter == 40):
+        # sim_utils.delete_prim("/World/ground")
+        # ground_usd_cfg = sim_utils.UsdFileCfg(
+        #     usd_path="/workspace/isaaclab/source/models/env9.usd",
+        #     rigid_props=sim_utils.RigidBodyPropertiesCfg(
+        #         rigid_body_enabled=True,
+        #         kinematic_enabled=True,
+        #     ),
+        #     collision_props=sim_utils.CollisionPropertiesCfg(
+        #         collision_enabled=True,
+        #     ),
+        #     visual_material=sim_utils.PreviewSurfaceCfg(
+        #         diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1
+        #     ),
+        #     activate_contact_sensors=True,
+        #     scale=(2.0, 2.0, 0.3),
+        # )
+        # sim_utils.spawn_from_usd("/World/ground", ground_usd_cfg)
 
-            physics_material = sim_utils.RigidBodyMaterialCfg(
-                static_friction=1.0,
-                dynamic_friction=0.9,
-                restitution=0.0,
-            )
-            sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
-            sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
+        # physics_material = sim_utils.RigidBodyMaterialCfg(
+        #     static_friction=1.0,
+        #     dynamic_friction=0.9,
+        #     restitution=0.0,
+        # )
+        # sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
+        # sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
 
         force_mag = 50.0 + 50.0 * (min(max(self.sim_step_counter - 20000, 0.0), 20000.0) / 5000.0)
         target_bodies = self._body_idxs
@@ -344,7 +371,8 @@ class ChickenEnv(DirectRLEnv):
         force_l = torch.norm(self.contact_l.data.net_forces_w, dim=-1).squeeze(-1)
         force_r = torch.norm(self.contact_r.data.net_forces_w, dim=-1).squeeze(-1)
 
-        ft_touch = torch.norm(self.contact_ft.data.net_forces_w, dim=-1).squeeze(-1) > 0.0
+        # fm = self.contact_ft.data.force_matrix_w  # (N, B, M, 3)
+        # ft_touch = torch.norm(fm, dim=-1).flatten(start_dim=1).max(dim=1).values > 1.0
 
         should_up_l = (self.timing_ref[:, 0] > 0.5).float()
         should_up_r = (self.timing_ref[:, 1] > 0.5).float()
@@ -373,13 +401,19 @@ class ChickenEnv(DirectRLEnv):
             .any(dim=-1)
         )
 
+        # in _get_rewards, after roll/pitch/yaw are unpacked
+        gait_phase = 2.0 * torch.pi * self.timing_ref[:, 0]
+        target_roll = self.sway_amplitude * torch.sin(gait_phase)
+
+        # roll_err = 12.0 * torch.square(roll - target_roll)
+
         rewards = [
             # task
             torch.exp(-6.0 * vel_mse) * 15,  # 0
             torch.exp(-0.4 * torch.square(yaw_rate - target_yaw_rate)) * 20,  # 1
             torch.exp(-2.0 * torch.square(z_vel)) * 1.5,  # 2
             torch.exp(-0.2 * torch.square(ang_vel)) * 1.5,  # 3
-            torch.exp(-4.0 * (torch.square(pitch) + torch.square(roll))) * 2,  # 4
+            torch.exp(-4.0 * torch.square(pitch) - torch.square(roll)) * 3,  # 4
             torch.exp(-50.0 * torch.square(height - self.target_height)) * 4,  # 5
             # gait height?
             # contact
@@ -387,15 +421,15 @@ class ChickenEnv(DirectRLEnv):
             (1.0 - torch.abs(should_down_r - contact_weight_r)) * 3,  # 7
             # reg
             feet_slip * -5,  # 8
-            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-2,  # 9
-            torch.sum(torch.square(joint_acc), dim=1).flatten() * -1.5e-5,  # 10
-            torch.sum(torch.square(joint_vels), dim=1).flatten() * -5e-3,  # 11
+            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,  # 9
+            torch.sum(torch.square(joint_acc), dim=1).flatten() * -1.5e-6,  # 10
+            torch.sum(torch.square(joint_vels), dim=1).flatten() * -5e-4,  # 11
             torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.25,  # 12
             torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.06,  # 13
             torch.any(joint_limit_violation, dim=-2).flatten() * -15.0,  # 14
             self.touching_ground * -7.5,  # 15
-            ft_touch * -25.0,
             torch.ones(self.num_envs, device=self.device) * 5.0,  # 16
+            # ft_touch * -25.0,  # 17
         ]
 
         if self.sim_step_counter % 500 == 0 and not self.is_teleop:
@@ -433,7 +467,8 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 3.5
 
-        out_of_bounds = too_fast | too_high | ((self.touching_ground != 0) & (self.episode_length_buf > 70))
+        out_of_bounds = too_fast | too_high | (self.touching_ground != 0)
+        # out_of_bounds = too_fast | too_high | ((self.touching_ground != 0) & (self.episode_length_buf > 70))
         # out_of_bounds = too_fast | too_high
         # out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
         # out_of_bounds = out_of_bounds * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)

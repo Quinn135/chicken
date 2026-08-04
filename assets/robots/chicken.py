@@ -64,7 +64,7 @@ CHICKEN_CFG = ArticulationCfg(
             collision_enabled=True,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
-            enabled_self_collisions=True,
+            enabled_self_collisions=False,
             solver_position_iteration_count=4,
             solver_velocity_iteration_count=1,
             sleep_threshold=0.0,
@@ -74,7 +74,7 @@ CHICKEN_CFG = ArticulationCfg(
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.05),
+        pos=(0.0, 0.0, 0.1),
         joint_pos={
             "l_side_hip": 0.0,
             "l_hip": 0.0,

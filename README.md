@@ -83,7 +83,7 @@ python scripts/control.py --task=Isaac-Chicken-Robot-v0 --num_envs 1 --real-time
 **Monitoring:**
 
 ```bash
-tensorboard --logdir logs/skrl/chicken --bind_all
+tensorboard --logdir logs/skrl/chicken2 --bind_all
 ```
 
 ## 5. Helpful Utilities

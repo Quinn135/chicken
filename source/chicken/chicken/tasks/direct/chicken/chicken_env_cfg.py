@@ -30,11 +30,11 @@ from assets.robots.chicken import CHICKEN_CFG
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    # num_envs = 1
+    num_envs = 1
     # num_envs = 2
     # num_envs = 9
     # num_envs = 64
-    num_envs = 2056
+    # num_envs = 1024
     # num_envs = 4096
 
     spawn_size = 5
@@ -73,171 +73,166 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     contact_cfg_r: ContactSensorCfg = ContactSensorCfg(
         prim_path=f"/World/envs/env_.*{root_str}/r_foot_pad",
         update_period=0.0,
-        filter_prim_paths_expr=["/World/ground.*"],
+        # filter_prim_paths_expr=["/World/ground.*"],
         track_air_time=True,
     )
     contact_cfg_l: ContactSensorCfg = ContactSensorCfg(
         prim_path=f"/World/envs/env_.*{root_str}/l_foot_pad",
         update_period=0.0,
-        filter_prim_paths_expr=["/World/ground.*"],
+        # filter_prim_paths_expr=["/World/ground.*"],
         track_air_time=True,
-    )
-
-    contact_cfg_ft: ContactSensorCfg = ContactSensorCfg(
-        prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_7",
-        update_period=0.0,
-        filter_prim_paths_expr=[f"/World/envs/env_.*{root_str}/escmountcenter_8"],
     )
 
     contact_cfgs: dict[str, ContactSensorCfg] = {
         "l_knee": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/lm_knee",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_knee": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_knee",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_foot": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_foot",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_foot": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_foot",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_leg": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_upper_leg",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_leg": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_upper_leg",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_lowerleg": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_lower_leg",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_lowerleg": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_lower_leg",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "lm_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/lm_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "rm_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "lm_side_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/lm_side_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "rm_side_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_side_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "lm_ankle": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/lm_ankle",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "rm_ankle": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/rm_ankle",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "l_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/l_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "r_hip": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/r_hip",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "base": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/base",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
-        # "boxlid": ContactSensorCfg(
-        #     prim_path=f"/World/envs/env_.*{root_str}/bodyboxlid",
-        #     update_period=0.0,
-        #     filter_prim_paths_expr=["/World/ground.*"],
-        # ),
         "box": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/bodybox",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "batf": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/batfront",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "batb": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/batback",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
+        ),
+        "esc0": ContactSensorCfg(
+            prim_path=f"/World/envs/env_.*{root_str}/escmountcenter",
+            update_period=0.0,
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc1": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_1",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc2": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_2",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc3": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_3",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc4": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_4",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc5": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_5",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc6": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_6",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
         "esc7": ContactSensorCfg(
             prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_7",
             update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
-        ),
-        "esc8": ContactSensorCfg(
-            prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_8",
-            update_period=0.0,
-            filter_prim_paths_expr=["/World/ground.*"],
+            # filter_prim_paths_expr=["/World/ground.*"],
         ),
     }
-    # scene
 
+    contact_cfg_ft: ContactSensorCfg = ContactSensorCfg(
+        prim_path=f"/World/envs/env_.*{root_str}/escmountcenter_6",
+        update_period=0.0,
+        filter_prim_paths_expr=[f"/World/envs/env_.*{root_str}/escmountcenter_7"],
+    )
+
+    # scene
     scene: InteractiveSceneCfg = InteractiveSceneCfg(
         num_envs=num_envs,
         env_spacing=spawn_size / math.sqrt(num_envs),
