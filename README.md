@@ -54,7 +54,7 @@ cd /workspace/chicken
 
 1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
 2. Select: **`Dev Containers: Attach to Running Container...`**
-3. Run the Python setup task: **`Tasks: Run Task`** -> `setup_python_env`.
+3. Run the Python setup task: **`Tasks: Run Task`** -> `setup_python_env`. (/isaac-sim)
 
 ## 4. Training & Running Tasks
 
