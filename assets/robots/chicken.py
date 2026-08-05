@@ -74,7 +74,7 @@ CHICKEN_CFG = ArticulationCfg(
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.1),
+        pos=(0.0, 0.0, 0.02),
         joint_pos={
             "l_side_hip": 0.0,
             "l_hip": 0.0,
