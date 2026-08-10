@@ -1,0 +1,68 @@
+2026-08-10 16:33:55 [simulation_context.py:836] WARNING: The `enable_external_forces_every_iteration` parameter in the PhysxCfg is set to False. If you are experiencing noisy velocities, consider enabling this flag. You may need to slightly increase the number of velocity iterations (setting it to 1 or 2 rather than 0), together with this flag, to improve the accuracy of velocity updates.
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/ground/env10'
+2026-08-10 16:33:55 [prims.py:874] DEBUG: Cannot apply physics material '/World/gripmat' on prim '/World/ground'. It is neither a PhysX scene, collider, a deformable body, nor a particle system.
+2026-08-10 16:33:55 [prims.py:874] DEBUG: Cannot apply physics material '/World/gripmat' on prim '/World/ground/env10'. It is neither a PhysX scene, collider, a deformable body, nor a particle system.
+2026-08-10 16:33:55 [prims.py:874] DEBUG: Cannot apply physics material '/World/gripmat' on prim '/World/ground/material'. It is neither a PhysX scene, collider, a deformable body, nor a particle system.
+2026-08-10 16:33:55 [prims.py:874] DEBUG: Cannot apply physics material '/World/gripmat' on prim '/World/ground/env10/node_'. It is neither a PhysX scene, collider, a deformable body, nor a particle system.
+2026-08-10 16:33:55 [prims.py:874] DEBUG: Cannot apply physics material '/World/gripmat' on prim '/World/ground/material/Shader'. It is neither a PhysX scene, collider, a deformable body, nor a particle system.
+2026-08-10 16:33:55 [prims.py:653] WARNING: Could not perform 'modify_collision_properties' on any prims under: '/World/envs/env_0/Robot'. This might be because of the following reasons:
+	(1) The desired attribute does not exist on any of the prims.
+	(2) The desired attribute exists on an instanced prim.
+		Discovered list of instanced prim paths: ['/World/envs/env_0/Robot/base/visuals', '/World/envs/env_0/Robot/base/collisions', '/World/envs/env_0/Robot/rm_side_hip/visuals', '/World/envs/env_0/Robot/rm_side_hip/collisions', '/World/envs/env_0/Robot/escmountcenter_4/visuals', '/World/envs/env_0/Robot/escmountcenter_4/collisions', '/World/envs/env_0/Robot/r_hip/visuals', '/World/envs/env_0/Robot/r_hip/collisions', '/World/envs/env_0/Robot/rm_hip/visuals', '/World/envs/env_0/Robot/rm_hip/collisions', '/World/envs/env_0/Robot/escmountcenter_6/visuals', '/World/envs/env_0/Robot/escmountcenter_6/collisions', '/World/envs/env_0/Robot/r_upper_leg/visuals', '/World/envs/env_0/Robot/r_upper_leg/collisions', '/World/envs/env_0/Robot/rm_knee/visuals', '/World/envs/env_0/Robot/rm_knee/collisions', '/World/envs/env_0/Robot/escmountcenter_5/visuals', '/World/envs/env_0/Robot/escmountcenter_5/collisions', '/World/envs/env_0/Robot/r_lower_leg/visuals', '/World/envs/env_0/Robot/r_lower_leg/collisions', '/World/envs/env_0/Robot/rm_ankle/visuals', '/World/envs/env_0/Robot/rm_ankle/collisions', '/World/envs/env_0/Robot/escmountcenter_7/visuals', '/World/envs/env_0/Robot/escmountcenter_7/collisions', '/World/envs/env_0/Robot/r_foot/visuals', '/World/envs/env_0/Robot/r_foot/collisions', '/World/envs/env_0/Robot/r_foot_pad/visuals', '/World/envs/env_0/Robot/r_foot_pad/collisions', '/World/envs/env_0/Robot/lm_side_hip/visuals', '/World/envs/env_0/Robot/lm_side_hip/collisions', '/World/envs/env_0/Robot/escmountcenter_1/visuals', '/World/envs/env_0/Robot/escmountcenter_1/collisions', '/World/envs/env_0/Robot/l_hip/visuals', '/World/envs/env_0/Robot/l_hip/collisions', '/World/envs/env_0/Robot/lm_hip/visuals', '/World/envs/env_0/Robot/lm_hip/collisions', '/World/envs/env_0/Robot/escmountcenter_3/visuals', '/World/envs/env_0/Robot/escmountcenter_3/collisions', '/World/envs/env_0/Robot/l_upper_leg/visuals', '/World/envs/env_0/Robot/l_upper_leg/collisions', '/World/envs/env_0/Robot/lm_knee/visuals', '/World/envs/env_0/Robot/lm_knee/collisions', '/World/envs/env_0/Robot/escmountcenter/visuals', '/World/envs/env_0/Robot/escmountcenter/collisions', '/World/envs/env_0/Robot/l_lower_leg/visuals', '/World/envs/env_0/Robot/l_lower_leg/collisions', '/World/envs/env_0/Robot/lm_ankle/visuals', '/World/envs/env_0/Robot/lm_ankle/collisions', '/World/envs/env_0/Robot/escmountcenter_2/visuals', '/World/envs/env_0/Robot/escmountcenter_2/collisions', '/World/envs/env_0/Robot/l_foot/visuals', '/World/envs/env_0/Robot/l_foot/collisions', '/World/envs/env_0/Robot/l_foot_pad/visuals', '/World/envs/env_0/Robot/l_foot_pad/collisions', '/World/envs/env_0/Robot/bodybox/visuals', '/World/envs/env_0/Robot/bodybox/collisions', '/World/envs/env_0/Robot/batfront/visuals', '/World/envs/env_0/Robot/batfront/collisions', '/World/envs/env_0/Robot/batback/visuals', '/World/envs/env_0/Robot/batback/collisions', '/World/envs/env_0/Robot/electronics/visuals', '/World/envs/env_0/Robot/electronics/collisions']
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/root'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/base'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/rm_side_hip'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_4'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/r_hip'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/rm_hip'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_6'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/r_upper_leg'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/rm_knee'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_5'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/r_lower_leg'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/rm_ankle'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_7'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/r_foot'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/r_foot_pad'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/lm_side_hip'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_1'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/l_hip'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/lm_hip'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_3'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/l_upper_leg'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/lm_knee'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/l_lower_leg'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/lm_ankle'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/escmountcenter_2'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/l_foot'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/l_foot_pad'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/bodybox'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/batfront'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/batback'
+2026-08-10 16:33:55 [schemas.py:557] DEBUG: Adding contact report API to prim: '/World/envs/env_0/Robot/electronics'
+2026-08-10 16:33:55 [articulation.py:1569] INFO: Articulation initialized at: /World/envs/env_.*/Robot with root '/World/envs/env_.*/Robot/root'.
+2026-08-10 16:33:55 [articulation.py:1570] INFO: Is fixed root: False
+2026-08-10 16:33:55 [articulation.py:1571] INFO: Number of bodies: 32
+2026-08-10 16:33:55 [articulation.py:1572] INFO: Body names: ['root', 'base', 'rm_side_hip', 'lm_side_hip', 'bodybox', 'escmountcenter_4', 'r_hip', 'escmountcenter_1', 'l_hip', 'batfront', 'batback', 'electronics', 'rm_hip', 'lm_hip', 'escmountcenter_6', 'r_upper_leg', 'escmountcenter_3', 'l_upper_leg', 'rm_knee', 'lm_knee', 'escmountcenter_5', 'r_lower_leg', 'escmountcenter', 'l_lower_leg', 'rm_ankle', 'lm_ankle', 'escmountcenter_7', 'r_foot', 'escmountcenter_2', 'l_foot', 'r_foot_pad', 'l_foot_pad']
+2026-08-10 16:33:55 [articulation.py:1573] INFO: Number of joints: 8
+2026-08-10 16:33:55 [articulation.py:1574] INFO: Joint names: ['r_side_hip', 'l_side_hip', 'r_hip', 'l_hip', 'r_knee', 'l_knee', 'r_ankle', 'l_ankle']
+2026-08-10 16:33:55 [articulation.py:1575] INFO: Number of fixed tendons: 0
+2026-08-10 16:33:55 [articulation.py:1753] INFO: Actuator collection: motor_actuator with model 'DelayedPDActuator' (type: explicit) and joint names: ['r_side_hip', 'l_side_hip', 'r_hip', 'l_hip', 'r_knee', 'l_knee', 'r_ankle', 'l_ankle'] [slice(None, None, None)].
+2026-08-10 16:33:55 [articulation.py:2028] INFO: Simulation parameters for joints in /World/envs/env_.*/Robot:
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                Simulation Joint Information (Prim path: /World/envs/env_.*/Robot)                                               |
++-------+------------+-----------+---------+----------+-----------------+------------------+------------------+-----------------+-----------------+---------------+
+| Index | Name       | Stiffness | Damping | Armature | Static Friction | Dynamic Friction | Viscous Friction | Position Limits | Velocity Limits | Effort Limits |
++-------+------------+-----------+---------+----------+-----------------+------------------+------------------+-----------------+-----------------+---------------+
+|   0   | r_side_hip |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-0.349, 0.873] |      35.000     |     15.000    |
+|   1   | l_side_hip |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-0.873, 0.349] |      35.000     |     15.000    |
+|   2   | r_hip      |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-1.755, 1.562] |      35.000     |     15.000    |
+|   3   | l_hip      |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-1.555, 1.761] |      35.000     |     15.000    |
+|   4   | r_knee     |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-0.979, 2.075] |      35.000     |     15.000    |
+|   5   | l_knee     |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-2.064, 0.990] |      35.000     |     15.000    |
+|   6   | r_ankle    |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-0.524, 0.524] |      35.000     |     15.000    |
+|   7   | l_ankle    |   0.000   |  0.000  |  0.010   |      0.020      |      0.010       |      0.020       | [-0.524, 0.524] |      35.000     |     15.000    |
++-------+------------+-----------+---------+----------+-----------------+------------------+------------------+-----------------+-----------------+---------------+
+2026-08-10 16:33:55 [__init__.py:162] INFO: Environment wrapper: Isaac Lab (single-agent)
+2026-08-10 16:33:55 [__init__.py:81] INFO: Seed: 420

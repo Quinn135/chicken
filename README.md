@@ -68,16 +68,19 @@ cd /workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/direct/ai3
 
 ```bash
 # Play/Evaluate
-python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0 --num_envs 4
+python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0
 
 # Train
-python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0
+python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0 --headless
 
 # Resume Training
-python train.py --task=Isaac-Ai3-Direct-v0 --checkpoint /absolute/dir/to/###.pt
+python train.py --task=Isaac-Chicken-Robot-v0 --headless --checkpoint /absolute/dir/to/###.pt
 
 # teleop!
-python scripts/control.py --task=Isaac-Chicken-Robot-v0 --num_envs 1 --real-time
+python scripts/control.py --task=Isaac-Chicken-Robot-v0
+
+# export
+python scripts/skrl/export.py --task=Isaac-Chicken-Robot-v0 --headless
 ```
 
 **Monitoring:**

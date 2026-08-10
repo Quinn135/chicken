@@ -31,11 +31,11 @@ from assets.robots.chicken import CHICKEN_CFG
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
     # num_envs = 1
-    # num_envs = 2
+    num_envs = 2
     # num_envs = 9
     # num_envs = 64
     # num_envs = 1024
-    num_envs = 4096
+    # num_envs = 4096
 
     spawn_size = 5
 
@@ -43,12 +43,12 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     episode_length_s = 15
     action_space = 8  # command 8 motor positions
 
-    history_length = 30
+    history_length = 15
     history_interval = 1
 
     original_observation_space = 8 + 8 * 2 + 4 + 3 + 3
     history_size = original_observation_space + action_space
-    observation_space = original_observation_space + history_length * history_size
+    observation_space = original_observation_space + history_length / history_interval * history_size
 
     state_space = 0
 
