@@ -78,18 +78,19 @@ simulation_app = app_launcher.app
 
 import os
 import random
+import subprocess
 import time
 
 # import numpy as np
 import gymnasium as gym
+import onnx
 import onnxruntime as ort
 import skrl
 import torch
 from packaging import version
 
-import onnx
-
 # https://onnxruntime.ai/docs/install/#install-onnx-runtime-gpu-cuda-or-tensorrt
+# apt install libprotobuf-dev protobuf-compiler
 
 # check for minimum supported skrl version
 SKRL_VERSION = "2.0.0"
@@ -215,7 +216,9 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     obs, _ = env.reset()
     rand_inputs = torch.randn((1, obs.shape[-1]), device=runner.agent.device)
 
-    filename = f"/workspace/isaaclab/source/onnx/output_{time.strftime('%Y%m%d-%H%M%S')}.onnx"
+    time_str = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"/workspace/isaaclab/source/onnx/output_{time_str}.onnx"
+    c_filename = f"/workspace/isaaclab/source/onnx/output_{time_str}.c"
 
     torch.onnx.export(model, rand_inputs, filename, input_names=["input"], output_names=["output"])
     onnx_model = onnx.load(filename)
@@ -228,7 +231,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
     print(model.forward(rand_inputs).detach().cpu().numpy())
     print(outputs[0])
 
-    print(f"Saved to {filename}")
+    print(f"Saved to {filename}, now running onnx2c")
+
+    c_out = subprocess.run(
+        ["/workspace/chicken/onnx2c/build/onnx2c", "-P9", f"{filename}"], capture_output=True, text=True, check=True
+    )
+
+    with open(c_filename, "w", encoding="utf-8") as f:
+        f.write(c_out.stdout)
+
+    print(f"Onnx2c saved at {c_filename}")
 
     env.close()
 

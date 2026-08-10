@@ -50,6 +50,26 @@ class ChickenEnv(DirectRLEnv):
         ]
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
 
+        print(f"l_side_hip: {self.robot.find_joints('l_side_hip')[0]}")
+        print(f"l_hip: {self.robot.find_joints('l_hip')[0]}")
+        print(f"l_knee: {self.robot.find_joints('l_knee')[0]}")
+        print(f"l_ankle: {self.robot.find_joints('l_ankle')[0]}")
+        print("-----")
+        print(f"r_side_hip: {self.robot.find_joints('r_side_hip')[0]}")
+        print(f"r_hip: {self.robot.find_joints('r_hip')[0]}")
+        print(f"r_knee: {self.robot.find_joints('r_knee')[0]}")
+        print(f"r_ankle: {self.robot.find_joints('r_ankle')[0]}")
+        print("----")
+
+        names = self.robot.data.joint_names
+        for i, idx in enumerate(self._all_joint_dof_idxs):
+            print(f"action[{i}] -> dof {idx[0]} -> {names[idx[0]]}")
+
+        print("----")
+        names = self.robot.data.joint_names
+        print("l:", [names[i[0]] for i in self._l_joint_dof_idxs])
+        print("r:", [names[i[0]] for i in self._r_joint_dof_idxs])
+
         self._body_idxs = self.robot.find_bodies("electronics")[0]
         self._foot_idxs = [self.robot.find_bodies("l_foot_pad")[0], self.robot.find_bodies("r_foot_pad")[0]]
         self._l_foot_idxs = self.robot.find_bodies("l_foot_pad")[0]
@@ -307,6 +327,7 @@ class ChickenEnv(DirectRLEnv):
             self._sin_cos(self.joint_pos[:, self._r_joint_dof_idxs].flatten(start_dim=-2)),
             self._sin_cos(2.0 * torch.pi * (self.timing_ref)),
             self.imu.data.projected_gravity_b,
+            self.imu.data.ang_vel_b,
             self.target_vel,
             self.target_horiz_vel,
             self.target_yaw_rate,

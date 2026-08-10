@@ -34,6 +34,8 @@ apt update && apt upgrade -y
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | 
 apt-get install git-lfs && git lfs install
 
+pip install onnxruntime-gpu
+
 # Configure Git
 git config --global user.email "cooperstein.quinn@gmail.com"
 git config --global user.name "Quinn135"
@@ -42,6 +44,14 @@ git config --global user.name "Quinn135"
 mkdir -p /workspace/chicken && cd /workspace/chicken
 git clone https://github.com/Quinn135/chicken.git .
 python -m pip install -e source/chicken
+
+# Setup onnx2c
+apt install libprotobuf-dev protobuf-compiler
+cd /workspace/chicken/onnx2c
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+make onnx2c
 ```
 
 If somehow it's broken (isaaclab not found), this might help:
