@@ -1,1 +1,4 @@
 onnx2c
+[submodule "onnx2c"]
+	path = onnx2c
+	url = https://github.com/kraiskil/onnx2c.git
