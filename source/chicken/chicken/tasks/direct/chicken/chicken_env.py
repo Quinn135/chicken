@@ -317,7 +317,7 @@ class ChickenEnv(DirectRLEnv):
         self.roll, self.pitch, self.yaw = euler_xyz_from_quat(body_quats)
 
         history_steps = self.cfg.history_length // self.cfg.history_interval
-        history_stride = self.cfg.history_interval * 2
+        history_stride = self.cfg.history_interval
         history_indices = list(range(0, history_steps * history_stride, history_stride))
         real_history = self.history[:, history_indices, :]
 
