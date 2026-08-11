@@ -316,9 +316,10 @@ class ChickenEnv(DirectRLEnv):
         body_quats = self.robot.data.body_quat_w[:, self._body_idxs, :].flatten(start_dim=-2)
         self.roll, self.pitch, self.yaw = euler_xyz_from_quat(body_quats)
 
-        real_history = self.history[
-            :, list(range(0, self.cfg.history_length * self.cfg.history_interval, self.cfg.history_interval)), :
-        ]
+        history_steps = self.cfg.history_length // self.cfg.history_interval
+        history_stride = self.cfg.history_interval * 2
+        history_indices = list(range(0, history_steps * history_stride, history_stride))
+        real_history = self.history[:, history_indices, :]
 
         obs_data = (
             self.joint_vel[:, self._l_joint_dof_idxs].flatten(start_dim=-2),
