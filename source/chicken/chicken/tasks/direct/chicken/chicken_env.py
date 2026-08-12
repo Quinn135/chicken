@@ -242,7 +242,7 @@ class ChickenEnv(DirectRLEnv):
         # sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
         # sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
 
-        force_mag = 50.0 + 50.0 * (min(max(self.sim_step_counter - 20000, 0.0), 20000.0) / 5000.0)
+        force_mag = 50.0 + 200.0 * (min(max(self.sim_step_counter - 20000, 0.0), 20000.0) / 5000.0)
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -425,8 +425,8 @@ class ChickenEnv(DirectRLEnv):
 
         rewards = [
             # task
-            torch.exp(-6.0 * vel_mse) * 15,  # 0
-            torch.exp(-0.4 * torch.square(yaw_rate - target_yaw_rate)) * 25,  # 1
+            torch.exp(-6.0 * vel_mse) * 35,  # 0
+            torch.exp(-0.4 * torch.square(yaw_rate - target_yaw_rate)) * 35,  # 1
             torch.exp(-2.0 * torch.square(z_vel)) * 1.5,  # 2
             torch.exp(-0.2 * torch.square(ang_vel)) * 1.5,  # 3
             torch.exp(-4.0 * torch.square(pitch) - torch.square(roll)) * 2,  # 4

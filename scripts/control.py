@@ -287,7 +287,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, expe
                 v_x=v_x,
                 v_y=v_y,
                 yaw_rate=yaw_rate,
-                freq_t=2.5,
+                freq_t=2.0,
             )
 
         # run everything in inference mode
