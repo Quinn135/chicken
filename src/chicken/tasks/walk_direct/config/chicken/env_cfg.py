@@ -13,7 +13,7 @@ from isaaclab.physics import PhysxAutoCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg, PvaCfg
 from isaaclab.sim import SimulationCfg
-from isaaclab.sim.schemas import CollisionBaseCfg, RigidBodyBaseCfg
+from isaaclab.sim.schemas import CollisionBaseCfg
 from isaaclab.sim.spawners.materials import RigidBodyMaterialBaseCfg
 from isaaclab.utils import configclass, replace
 from isaaclab_ov.physics import OvPhysxCfg
@@ -91,14 +91,13 @@ class ChickenSceneCfg(InteractiveSceneCfg):
         # groups that filter_collisions sets up, and the robots fall straight through.
         collision_group=-1,
         spawn=sim_utils.UsdFileCfg(
-            usd_path=str(CHICKEN_ASSETS_DIR / "terrain" / "env9.usd"),
-            # Static collider. env9.usd authors a kinematic rigid body, which PhysX in 3.x does not collide
-            # the triangle-mesh terrain against, so the robots fell through. The terrain never moves anyway.
-            rigid_props=RigidBodyBaseCfg(rigid_body_enabled=False),
+            # ground.usda is the 2.x env9.usd without its kinematic rigid body: a plain static collider.
+            # As a kinematic body, 3.x PhysX didn't collide the robots with the triangle mesh (they fell
+            # through), and a disabled body still crashed the newton_gl viewer. The terrain never moves.
+            usd_path=str(CHICKEN_ASSETS_DIR / "terrain" / "ground.usda"),
             collision_props=CollisionBaseCfg(collision_enabled=True),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             physics_material=RigidBodyMaterialBaseCfg(static_friction=1.0, dynamic_friction=0.9, restitution=0.0),
-            activate_contact_sensors=True,
             scale=(2.5, 2.5, 0.4),
         ),
     )
