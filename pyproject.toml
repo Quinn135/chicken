@@ -26,6 +26,8 @@ chicken = "chicken.tasks"
 [project.optional-dependencies]
 all = ["isaaclab-dev[all]"]
 dev = ["isaaclab-dev[dev]"]
+# ONNX export of trained policies (scripts/export.py)
+export = ["onnx>=1.17", "onnxruntime>=1.20"]
 importers = ["isaaclab-dev[importers]"]
 isaacsim = ["isaaclab-dev[isaacsim]"]
 leapp = ["isaaclab-dev[leapp]"]

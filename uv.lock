@@ -536,6 +536,10 @@ all = [
 dev = [
     { name = "isaaclab-dev", extra = ["dev"] },
 ]
+export = [
+    { name = "onnx" },
+    { name = "onnxruntime" },
+]
 importers = [
     { name = "isaaclab-dev", extra = ["importers"] },
 ]
@@ -634,8 +638,10 @@ requires-dist = [
     { name = "isaaclab-dev", extras = ["video"], marker = "extra == 'video'", editable = "../IsaacLab" },
     { name = "isaaclab-dev", extras = ["viser"], marker = "extra == 'viser'", editable = "../IsaacLab" },
     { name = "isaaclab-dev", extras = ["wandb"], marker = "extra == 'wandb'", editable = "../IsaacLab" },
+    { name = "onnx", marker = "extra == 'export'", specifier = ">=1.17" },
+    { name = "onnxruntime", marker = "extra == 'export'", specifier = ">=1.20" },
 ]
-provides-extras = ["all", "dev", "importers", "isaacsim", "leapp", "mimic", "ov", "ovphysx", "ovrtx", "rerun", "rl-games", "rlinf", "rsl-rl", "sb3", "skrl", "skrl-jax", "teleop", "test", "tetrahedralization", "torchrl", "video", "viser", "wandb"]
+provides-extras = ["all", "dev", "export", "importers", "isaacsim", "leapp", "mimic", "ov", "ovphysx", "ovrtx", "rerun", "rl-games", "rlinf", "rsl-rl", "sb3", "skrl", "skrl-jax", "teleop", "test", "tetrahedralization", "torchrl", "video", "viser", "wandb"]
 
 [package.metadata.requires-dev]
 dev = [
