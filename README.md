@@ -1,159 +1,117 @@
-# Isaac Lab: Docker & Dev Workflow
+# chicken
 
-**References:**
-* [Deployment Docker Documentation](https://isaac-sim.github.io/IsaacLab/main/source/deployment/docker.html#deployment-docker)
-* [Run Docker Example](https://isaac-sim.github.io/IsaacLab/main/source/deployment/run_docker_example.html)
+Isaac Lab 3 environment for training the chicken robot to walk, as a uv project.
 
----
+Registered task: **`Chicken-Walk-Direct`** (it was `Isaac-Chicken-Robot-v0` in the Isaac Lab 2.x / Docker version).
 
-## 1. Host Machine: Start Container
+## Setup
 
-Run these commands from your local machine to authorize display and start the Isaac Sim image:
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and an Isaac Lab 3 source checkout
+**next to this repo**. `pyproject.toml` points at it with relative paths:
+
+```
+thin/
+├── IsaacLab/      # Isaac Lab 3 checkout
+└── chickengit/    # this repo
+```
+
+If either folder moves, update the paths in `[tool.uv.sources]` in `pyproject.toml`.
+
+Create the environment (once, and again after pulling changes to `pyproject.toml` or `uv.lock`):
 
 ```bash
-cd /home/quinn/IsaacLab
-conda activate lab
-
-# Authorize screen sharing
-xhost +local:docker
-
-# Start and enter the container
-python docker/container.py start
-python docker/container.py enter
+uv sync
 ```
 
-*(To stop later: `python docker/container.py stop` — ensure Git changes are saved!)*
+That installs Isaac Lab, skrl and standalone PhysX (OvPhysX). No Docker or conda environment is needed;
+every command below runs through `uv run`, which uses the project's `.venv`.
 
-## 2. Inside Container: Environment Setup
-
-Once inside the container, run this block to update dependencies, configure Git, and install your project:
+## Train
 
 ```bash
-# Update and install Git LFS
-apt update && apt upgrade -y
-curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | 
-apt-get install git-lfs && git lfs install
-
-pip install onnxruntime-gpu
-
-# Configure Git
-git config --global user.email "cooperstein.quinn@gmail.com"
-git config --global user.name "Quinn135"
-
-# Clone and install the 'chicken' repository
-mkdir -p /workspace/chicken && cd /workspace/chicken
-git clone https://github.com/Quinn135/chicken.git .
-python -m pip install -e source/chicken
-
-# Setup onnx2c
-apt install libprotobuf-dev protobuf-compiler
-cd /workspace/chicken/onnx2c
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make onnx2c
+uv run isaaclab train --rl_library skrl --task Chicken-Walk-Direct --num_envs 4096
 ```
 
-If somehow it's broken (isaaclab not found), this might help:
-```bash
-cd /workspace/chicken
-/isaac-sim/python.sh -m pip install -e /workspace/isaaclab/source/isaaclab
-```
+Runs are headless unless you pass `--viz` (there is no `--headless` flag in 3.x). Logs and checkpoints are
+written to `logs/skrl/chicken2/<timestamp>_ppo_torch/`. To resume, pass `--checkpoint <path/to/agent_N.pt>`.
 
-## 3. VS Code Integration
-
-1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
-2. Select: **`Dev Containers: Attach to Running Container...`**
-3. Run the Python setup task: **`Tasks: Run Task`** -> `setup_python_env`. (/isaac-sim)
-
-## 4. Training & Running Tasks
-
-Navigate to the working directory before running training scripts:
+Watch training progress:
 
 ```bash
-cd /workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/direct/ai3
+uv run tensorboard --logdir logs/skrl/chicken2
 ```
 
-**Training / Playing:**
+## Play a trained policy
 
 ```bash
-# Play/Evaluate
-python scripts/skrl/play.py --task=Isaac-Chicken-Robot-v0
-
-# Train
-python scripts/skrl/train.py --task=Isaac-Chicken-Robot-v0 --headless
-
-# Resume Training
-python train.py --task=Isaac-Chicken-Robot-v0 --headless --checkpoint /absolute/dir/to/###.pt
-
-# teleop!
-python scripts/control.py --task=Isaac-Chicken-Robot-v0
-
-# export
-python scripts/skrl/export.py --task=Isaac-Chicken-Robot-v0 --headless
+PYGLFW_LIBRARY_VARIANT=x11 uv run isaaclab play --rl_library skrl --task Chicken-Walk-Direct --num_envs 9 --checkpoint latest --viz newton_gl
 ```
 
-**Monitoring:**
+`--checkpoint latest` picks the newest run in `logs/skrl/chicken2`. `PYGLFW_LIBRARY_VARIANT=x11` is needed for the
+`newton_gl` viewer on Wayland desktops; without it the viewer crashes with `undefined symbol: glfwGetX11Window`.
+To make it permanent, add `export PYGLFW_LIBRARY_VARIANT=x11` to `~/.bashrc`.
+
+Quick checks without a trained policy:
 
 ```bash
-tensorboard --logdir logs/skrl/chicken2 --bind_all
+uv run isaaclab list_envs
+uv run isaaclab random_agent --task Chicken-Walk-Direct --num_envs 16 --max_steps 600
 ```
 
-## 5. Helpful Utilities
+## Physics backend
 
-**Copy files from container to host:**
+The robot settings (solver iterations, depenetration velocity, sleep threshold) are PhysX-specific, so the
+task defaults to PhysX: Isaac Sim's PhysX if it is installed, otherwise standalone OvPhysX. To pick one
+explicitly, add `physics=<name>` to any command:
+
+| `physics=`       | Needs                                                          |
+| ---------------- | -------------------------------------------------------------- |
+| `physx`          | Default; uses whichever PhysX below is installed               |
+| `ovphysx`        | Nothing extra (installed by `uv sync`)                         |
+| `isaacsim_physx` | `--extra isaacsim` on every command (full Isaac Sim, large download) |
+
+There is no Newton preset yet; that needs Newton solver settings tuned for the chicken.
+
+## Changing the robot
+
+The task loads `src/chicken/assets/data/robots/usd/chicken/chicken.usda`, which is generated from the URDF in
+`src/chicken/assets/data/robots/chicken_v6_5/`. After editing the URDF, regenerate it and commit the result:
 
 ```bash
-docker cp isaac-lab-base:/workspace/isaaclab/____ .
+uv run --extra importers python scripts/convert_robot.py
 ```
 
-**Open Isaac Sim UI:**
+If you add, remove or rename links, also update `CHICKEN_BODY_PATHS` in `src/chicken/assets/chicken.py`. The 3.x
+importer nests each link under its parent, so the sensors need each link's full path.
+
+## Project layout
+
+| Path                                                       | What it is                                          |
+| ---------------------------------------------------------- | --------------------------------------------------- |
+| `src/chicken/tasks/walk_direct/config/chicken/env.py`      | The environment: observations, rewards, resets      |
+| `src/chicken/tasks/walk_direct/config/chicken/env_cfg.py`  | Scene (ground, robot, sensors, lights) and physics  |
+| `src/chicken/tasks/walk_direct/config/chicken/agents/`     | skrl PPO settings                                   |
+| `src/chicken/tasks/walk_direct/config/chicken/__init__.py` | Task registration                                   |
+| `src/chicken/assets/chicken.py`                            | Robot config: actuators, physics properties         |
+| `src/chicken/assets/data/`                                 | URDF, generated robot USD and ground USD            |
+| `scripts/convert_robot.py`                                 | URDF to USD conversion                              |
+| `models/`                                                  | Older robot USDs from the 2.x project (unused)      |
+
+## Not ported yet
+
+`scripts/control.py` (keyboard teleop) and `scripts/skrl/export.py` (ONNX export) still use the Isaac Lab 2.x
+launcher (`AppLauncher`) and won't run as they are.
+
+## Development
 
 ```bash
-isaaclab -s
+uv run pytest
+uv run ruff check src tests
+uv run pre-commit run --all-files
 ```
 
----
-
-## 6. Appendix: Optional & Boilerplate Notes
-
-<details>
-<summary>Click to expand manual Docker run command and template basics</summary>
-
-<br>
-
-**Manual Docker Run (Alternative to `container.py`)**
+To set up VS Code or Cursor with the project's interpreter:
 
 ```bash
-xhost +local:docker
-docker run --name isaac-sim --entrypoint bash -it --gpus all -e "ACCEPT_EULA=Y" --rm --network=host \
-    -e "PRIVACY_CONSENT=Y" \
-    -v $HOME/.Xauthority:/isaac-sim/.Xauthority \
-    -e DISPLAY \
-    -v ~/docker/isaac-sim/cache/main:/isaac-sim/.cache:rw \
-    -v ~/docker/isaac-sim/cache/computecache:/isaac-sim/.nv/ComputeCache:rw \
-    -v ~/docker/isaac-sim/logs:/isaac-sim/.nvidia-omniverse/logs:rw \
-    -v ~/docker/isaac-sim/config:/isaac-sim/.nvidia-omniverse/config:rw \
-    -v ~/docker/isaac-sim/data:/isaac-sim/.local/share/ov/data:rw \
-    -v ~/docker/isaac-sim/pkg:/isaac-sim/.local/share/ov/pkg:rw \
-    -v ~/Documents/isaac_projects:/isaac-sim/my_projects:rw \
-    -u 1234:1234 \
-    nvcr.io/nvidia/isaac-sim:5.1.0
-
-# Run inside:
-./runapp.sh
+uv run isaaclab --editor
 ```
-
-**Template Pylance Troubleshooting:**
-
-If VS Code runs out of memory, exclude Omniverse packages in `.vscode/settings.json`:
-
-```json
-{
-    "python.analysis.extraPaths": [
-        "<path-to-ext-repo>/source/chicken"
-    ]
-}
-```
-
-</details>
