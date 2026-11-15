@@ -354,7 +354,7 @@ class ChickenEnv(DirectRLEnv):
         rewards = [
             # task
             torch.exp(-6.0 * vel_mse) * 35,  # 0
-            torch.exp(-0.4 * torch.square(yaw_rate - target_yaw_rate)) * 35,  # 1
+            torch.exp(-0.4 * torch.square(yaw_rate - target_yaw_rate)) * 20,  # 1
             torch.exp(-2.0 * torch.square(z_vel)) * 1.5,  # 2
             torch.exp(-0.2 * torch.square(ang_vel)) * 1.5,  # 3
             torch.exp(-4.0 * torch.square(pitch) - torch.square(roll)) * 2,  # 4
