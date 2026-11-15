@@ -455,10 +455,10 @@ class ChickenEnv(DirectRLEnv):
         # if False:
         # if self.sim_step_counter < 5000:
         random_rotation_roll = sample_uniform(
-            -torch.pi * 30.0 / 180.0, torch.pi * 30.0 / 180.0, (env_ids_len, 1), device=self.device
+            -torch.pi * 10.0 / 180.0, torch.pi * 10.0 / 180.0, (env_ids_len, 1), device=self.device
         )  # type: ignore
         random_rotation_pitch = sample_uniform(
-            -torch.pi * 30.0 / 180.0, torch.pi * 30.0 / 180.0, (env_ids_len, 1), device=self.device
+            -torch.pi * 10.0 / 180.0, torch.pi * 10.0 / 180.0, (env_ids_len, 1), device=self.device
         )  # type: ignore
         # else:
         #     random_rotation_roll = sample_uniform(

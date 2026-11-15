@@ -131,12 +131,12 @@ class ChickenSceneCfg(InteractiveSceneCfg):
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    num_envs = 1
+    # num_envs = 1
     # num_envs = 2
     # num_envs = 9
     # num_envs = 64
     # num_envs = 1024
-    # num_envs = 4096
+    num_envs = 4096
 
     spawn_size = 5
 
