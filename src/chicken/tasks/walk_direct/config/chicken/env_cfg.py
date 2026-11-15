@@ -165,7 +165,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # scene
     scene: ChickenSceneCfg = ChickenSceneCfg(
         num_envs=num_envs,
-        env_spacing=spawn_size / math.sqrt(num_envs),
+        env_spacing=spawn_size / math.sqrt(num_envs),  # recomputed from the actual num_envs in ChickenEnv
         replicate_physics=True,
         lazy_sensor_update=True,
         filter_collisions=True,

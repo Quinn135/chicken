@@ -8,6 +8,7 @@ from __future__ import annotations
 
 # import math
 # import random
+import math
 from collections.abc import Sequence
 
 import torch
@@ -24,6 +25,9 @@ class ChickenEnv(DirectRLEnv):
     cfg: ChickenEnvCfg
 
     def __init__(self, cfg: ChickenEnvCfg, render_mode: str | None = None, **kwargs):
+        # Pack every robot into the same spawn_size x spawn_size area, whatever --num_envs is. The config's
+        # value is computed from its default num_envs, before command-line overrides are applied.
+        cfg.scene.env_spacing = cfg.spawn_size / math.sqrt(cfg.scene.num_envs)
         super().__init__(cfg, render_mode, **kwargs)
 
         # The robot and sensors are declared on ChickenSceneCfg (2.x built them in _setup_scene).
