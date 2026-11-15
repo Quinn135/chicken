@@ -1,65 +1,42 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
-        // For standalone script execution
         {
             "name": "Python: Current File",
             "type": "debugpy",
             "request": "launch",
+            // Use the interpreter recorded by `isaaclab --editor`; VS Code skips wrapper scripts such as python.sh
+            "python": "${config:python.defaultInterpreterPath}",
             "program": "${file}",
-            "console": "integratedTerminal",
+            "console": "integratedTerminal"
         },
         {
-            "name": "Python: Train Template-Chicken-Direct-v0 with skrl (PPO)",
+            "name": "Train Chicken-Walk-Chicken-Direct with skrl (PPO)",
             "type": "debugpy",
             "request": "launch",
-            "args" : ["--task", "Template-Chicken-Direct-v0", "--num_envs", "4096", "--headless", "--algorithm", "PPO"],
-            "program": "${workspaceFolder}/scripts/skrl/train.py",
-            "console": "integratedTerminal",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "isaaclab",
+            "args": [
+                "train",
+                "--rl_library", "skrl",
+                "--task", "Chicken-Walk-Chicken-Direct",
+                "--num_envs", "4096",
+                "--algorithm", "PPO"            ],
+            "console": "integratedTerminal"
         },
         {
-            "name": "Python: Play Template-Chicken-Direct-v0 with skrl (PPO)",
+            "name": "Play Chicken-Walk-Chicken-Direct with skrl (PPO)",
             "type": "debugpy",
             "request": "launch",
-            "args" : ["--task", "Template-Chicken-Direct-v0", "--num_envs", "32", "--algorithm", "PPO"],
-            "program": "${workspaceFolder}/scripts/skrl/play.py",
-            "console": "integratedTerminal",
-        },
-        // For script execution inside a Docker
-        {
-            "name": "Docker: Current File",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH}:${workspaceFolder}"
-            }
-        },
-        {
-            "name": "Docker: Train Template-Chicken-Direct-v0 with skrl (PPO)",
-            "type": "debugpy",
-            "request": "launch",
-            "args" : ["--task", "Template-Chicken-Direct-v0", "--num_envs", "4096", "--headless", "--algorithm", "PPO"],
-            "program": "${workspaceFolder}/scripts/skrl/train.py",
-            "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH}:${workspaceFolder}"
-            },
-        },
-        {
-            "name": "Docker: Play Template-Chicken-Direct-v0 with skrl (PPO)",
-            "type": "debugpy",
-            "request": "launch",
-            "args" : ["--task", "Template-Chicken-Direct-v0", "--num_envs", "32", "--algorithm", "PPO"],
-            "program": "${workspaceFolder}/scripts/skrl/play.py",
-            "console": "integratedTerminal",
-            "env": {
-                "PYTHONPATH": "${env:PYTHONPATH}:${workspaceFolder}"
-            },
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "isaaclab",
+            "args": [
+                "play",
+                "--rl_library", "skrl",
+                "--task", "Chicken-Walk-Chicken-Direct",
+                "--num_envs", "32",
+                "--algorithm", "PPO"            ],
+            "console": "integratedTerminal"
         },
     ]
 }
