@@ -18,3 +18,4 @@ pyrightconfig.json
 
 # from the 2.x project
 models/usd
+imgui.ini

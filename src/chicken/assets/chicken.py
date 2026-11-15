@@ -80,7 +80,10 @@ CHICKEN_CFG = ArticulationCfg(
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.02),
+        # 2.x used (0, 0, 0.02) for the URDF's empty "root" link. The 3.x importer drops that link and
+        # makes "base" the articulation root, so add the root->base offset from fixed_node_to_root_joint
+        # (0.0623, 0.0075, 0.1262) to spawn the robot in the same place.
+        pos=(0.0623, 0.00748735, 0.02 + 0.126153),
         joint_pos={
             "l_side_hip": 0.0,
             "l_hip": 0.0,

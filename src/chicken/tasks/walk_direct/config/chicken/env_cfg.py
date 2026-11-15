@@ -87,9 +87,14 @@ class ChickenSceneCfg(InteractiveSceneCfg):
 
     ground = AssetBaseCfg(
         prim_path="/World/ground",
+        # -1 = global: every env collides with it. The default (0) leaves it out of the per-env collision
+        # groups that filter_collisions sets up, and the robots fall straight through.
+        collision_group=-1,
         spawn=sim_utils.UsdFileCfg(
             usd_path=str(CHICKEN_ASSETS_DIR / "terrain" / "env9.usd"),
-            rigid_props=RigidBodyBaseCfg(rigid_body_enabled=True, kinematic_enabled=True),
+            # Static collider. env9.usd authors a kinematic rigid body, which PhysX in 3.x does not collide
+            # the triangle-mesh terrain against, so the robots fell through. The terrain never moves anyway.
+            rigid_props=RigidBodyBaseCfg(rigid_body_enabled=False),
             collision_props=CollisionBaseCfg(collision_enabled=True),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.1, 0.1, 0.14), roughness=0.1, metallic=0.1),
             physics_material=RigidBodyMaterialBaseCfg(static_friction=1.0, dynamic_friction=0.9, restitution=0.0),
