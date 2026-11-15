@@ -6,8 +6,8 @@ Registered task: **`Chicken-Walk-Direct`** (it was `Isaac-Chicken-Robot-v0` in t
 
 ## Setup
 
-You need [uv](https://docs.astral.sh/uv/getting-started/installation/) and an Isaac Lab 3 source checkout
-**next to this repo**. `pyproject.toml` points at it with relative paths:
+You need [uv](https://docs.astral.sh/uv/getting-started/installation/), [Git LFS](https://git-lfs.com/) and an
+Isaac Lab 3 source checkout **next to this repo**. `pyproject.toml` points at it with relative paths:
 
 ```
 thin/
@@ -16,6 +16,25 @@ thin/
 ```
 
 If either folder moves, update the paths in `[tool.uv.sources]` in `pyproject.toml`.
+
+On a fresh machine, clone both side by side. The robot and terrain USD files are stored in Git LFS, so run
+`git lfs install` once first, or they arrive as small text pointers and the scene fails to load:
+
+```bash
+git lfs install
+git clone https://github.com/isaac-sim/IsaacLab.git
+git clone https://github.com/Quinn135/chicken.git chickengit
+```
+
+This project was ported and tested against Isaac Lab `main` at commit `eceac1ac1` (version 3.0.0, 2026-11-15).
+`main` changes often; if something breaks after updating Isaac Lab, check out that commit in `IsaacLab/`:
+
+```bash
+cd IsaacLab && git checkout eceac1ac1
+```
+
+`onnx2c/` is a git submodule used for compiling exported policies to C. It is not needed for training; fetch it
+with `git submodule update --init` when you need it.
 
 Create the environment (once, and again after pulling changes to `pyproject.toml` or `uv.lock`):
 
@@ -32,8 +51,12 @@ every command below runs through `uv run`, which uses the project's `.venv`.
 uv run isaaclab train --rl_library skrl --task Chicken-Walk-Direct --num_envs 4096
 ```
 
-Runs are headless unless you pass `--viz` (there is no `--headless` flag in 3.x). Logs and checkpoints are
-written to `logs/skrl/chicken2/<timestamp>_ppo_torch/`. To resume, pass `--checkpoint <path/to/agent_N.pt>`.
+Always pass `--num_envs`: the config defaults to a single environment. Runs are headless unless you pass `--viz`
+(there is no `--headless` flag in 3.x). Logs and checkpoints are written to
+`logs/skrl/chicken2/<timestamp>_ppo_torch/`. To resume, pass `--checkpoint <path/to/agent_N.pt>`.
+
+Checkpoints from the Isaac Lab 2.x / Docker version won't load: the observation size and network changed since
+then, so train a new policy.
 
 Watch training progress:
 
@@ -58,6 +81,16 @@ uv run isaaclab list_envs
 uv run isaaclab random_agent --task Chicken-Walk-Direct --num_envs 16 --max_steps 600
 ```
 
+### Recording video
+
+Add `--video` to `play` or `random_agent` to record an MP4 without opening a window. It needs the `video` extra:
+
+```bash
+PYGLFW_LIBRARY_VARIANT=x11 uv run --extra video isaaclab play --rl_library skrl --task Chicken-Walk-Direct --num_envs 9 --checkpoint latest --video --video_length 600
+```
+
+Videos are saved under the run's `videos/` folder (for `random_agent`, `logs/random_agent/Chicken-Walk-Direct/videos/`).
+
 ## Physics backend
 
 The robot settings (solver iterations, depenetration velocity, sleep threshold) are PhysX-specific, so the
@@ -81,8 +114,23 @@ The task loads `src/chicken/assets/data/robots/usd/chicken/chicken.usda`, which 
 uv run --extra importers python scripts/convert_robot.py
 ```
 
-If you add, remove or rename links, also update `CHICKEN_BODY_PATHS` in `src/chicken/assets/chicken.py`. The 3.x
-importer nests each link under its parent, so the sensors need each link's full path.
+Then check two things in `src/chicken/assets/chicken.py`:
+
+- **`CHICKEN_BODY_PATHS`**: update it if you add, remove or rename links. The 3.x importer nests each link under
+  its parent, so the sensors need each link's full path.
+- **Spawn position (`init_state.pos`)**: the importer drops the URDF's empty `root` link and makes `base` the
+  robot's reference point, so the spawn position includes the `fixed_node_to_root_joint` offset. If that joint's
+  origin changes, update the offset, or the robot spawns buried in the ground or floating above it.
+
+## Changing the ground
+
+The terrain is `src/chicken/assets/data/terrain/ground.usda`, which loads the mesh from `env10.usd` and adds the
+collider; the scale, friction and material are set in `env_cfg.py`. If you swap in a different terrain:
+
+- Keep it a **static collider**: a collision mesh with no rigid body on it. A kinematic rigid body makes the robots fall
+  through it, and the `newton_gl` viewer crashes.
+- Keep `collision_group=-1` on the ground in `env_cfg.py`, or the robots won't collide with it.
+- Check the terrain surface is just below z = 0 at the spawn points, the way the current one is.
 
 ## Project layout
 
@@ -93,7 +141,8 @@ importer nests each link under its parent, so the sensors need each link's full 
 | `src/chicken/tasks/walk_direct/config/chicken/agents/`     | skrl PPO settings                                   |
 | `src/chicken/tasks/walk_direct/config/chicken/__init__.py` | Task registration                                   |
 | `src/chicken/assets/chicken.py`                            | Robot config: actuators, physics properties         |
-| `src/chicken/assets/data/`                                 | URDF, generated robot USD and ground USD            |
+| `src/chicken/assets/data/robots/`                          | URDF and meshes, plus the generated robot USD       |
+| `src/chicken/assets/data/terrain/`                         | Ground: `ground.usda` and the `env10.usd` mesh      |
 | `scripts/convert_robot.py`                                 | URDF to USD conversion                              |
 | `models/`                                                  | Older robot USDs from the 2.x project (unused)      |
 
