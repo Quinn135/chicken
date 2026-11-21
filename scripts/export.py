@@ -4,8 +4,8 @@
 
 Writes to ``exports/<run>_<checkpoint>/``:
 
-- ``policy.onnx``: input ``(1, num_obs)`` raw observations, output ``(1, 8)`` mean actions.
-- ``nn.c`` / ``nn.h``: ``void entry(const float tensor_input[1][num_obs], float tensor_output[1][8])``,
+- ``policy.onnx``: input ``(1, num_obs)`` raw observations, output ``(1, num_actions)`` mean actions.
+- ``nn.c`` / ``nn.h``: ``void entry(const float tensor_input[1][num_obs], float tensor_output[1][num_actions])``,
   a drop-in replacement for ``lib/nn`` in the mainboard firmware. Skipped when onnx2c isn't found.
 
 Observation normalization is part of the exported model. During training and ``isaaclab play``, skrl's
@@ -181,7 +181,7 @@ def main():
     num_actions = got.shape[-1]
     with open(os.path.join(out_dir, "nn.h"), "w", encoding="utf-8") as f:
         f.write(
-            "#pragma once\n\n#ifdef __cplusplus\nextern \"C\"\n{\n#endif\n\n"
+            '#pragma once\n\n#ifdef __cplusplus\nextern "C"\n{\n#endif\n\n'
             f"    void entry(const float tensor_input[1][{num_obs}], float tensor_output[1][{num_actions}]);\n\n"
             "#ifdef __cplusplus\n}\n#endif\n"
         )

@@ -18,6 +18,8 @@ from isaaclab.envs import DirectRLEnv
 from isaaclab.sensors import ContactSensor, Pva
 from isaaclab.utils.math import euler_xyz_from_quat, quat_from_euler_xyz, sample_uniform
 
+from chicken.assets.chicken import CHICKEN_JOINTS
+
 from .env_cfg import GROUND_CONTACT_BODIES, ChickenEnvCfg
 
 
@@ -37,31 +39,12 @@ class ChickenEnv(DirectRLEnv):
         self.contact_r: ContactSensor = self.scene["contact_r"]
         self.contacts: list[ContactSensor] = [self.scene[f"contact_{key}"] for key in GROUND_CONTACT_BODIES]
 
-        # Flat lists of joint indices (2.x kept a one-element list per joint and flattened later).
-        self._l_joint_dof_idxs = [
-            self.robot.find_joints("l_side_hip")[0][0],
-            self.robot.find_joints("l_hip")[0][0],
-            self.robot.find_joints("l_knee")[0][0],
-            self.robot.find_joints("l_ankle")[0][0],
-        ]
-        self._r_joint_dof_idxs = [
-            self.robot.find_joints("r_side_hip")[0][0],
-            self.robot.find_joints("r_hip")[0][0],
-            self.robot.find_joints("r_knee")[0][0],
-            self.robot.find_joints("r_ankle")[0][0],
-        ]
+        # Flat lists of joint indices in action order (CHICKEN_JOINTS: left leg, then right leg).
+        # preserve_order keeps the order of the names given rather than the articulation's joint order.
+        per_leg = len(CHICKEN_JOINTS) // 2
+        self._l_joint_dof_idxs = self.robot.find_joints(CHICKEN_JOINTS[:per_leg], preserve_order=True)[0]
+        self._r_joint_dof_idxs = self.robot.find_joints(CHICKEN_JOINTS[per_leg:], preserve_order=True)[0]
         self._all_joint_dof_idxs = self._l_joint_dof_idxs + self._r_joint_dof_idxs
-
-        print(f"l_side_hip: {self.robot.find_joints('l_side_hip')[0]}")
-        print(f"l_hip: {self.robot.find_joints('l_hip')[0]}")
-        print(f"l_knee: {self.robot.find_joints('l_knee')[0]}")
-        print(f"l_ankle: {self.robot.find_joints('l_ankle')[0]}")
-        print("-----")
-        print(f"r_side_hip: {self.robot.find_joints('r_side_hip')[0]}")
-        print(f"r_hip: {self.robot.find_joints('r_hip')[0]}")
-        print(f"r_knee: {self.robot.find_joints('r_knee')[0]}")
-        print(f"r_ankle: {self.robot.find_joints('r_ankle')[0]}")
-        print("----")
 
         names = self.robot.data.joint_names
         for i, idx in enumerate(self._all_joint_dof_idxs):
@@ -72,10 +55,12 @@ class ChickenEnv(DirectRLEnv):
         print("l:", [names[i] for i in self._l_joint_dof_idxs])
         print("r:", [names[i] for i in self._r_joint_dof_idxs])
 
-        self._body_idxs = self.robot.find_bodies("electronics")[0]
-        self._foot_idxs = [self.robot.find_bodies("l_foot_pad")[0][0], self.robot.find_bodies("r_foot_pad")[0][0]]
-        self._l_foot_idxs = self.robot.find_bodies("l_foot_pad")[0]
-        self._r_foot_idxs = self.robot.find_bodies("r_foot_pad")[0]
+        self.nowalk = True
+
+        self._body_idxs = self.robot.find_bodies("imu")[0]  # v6.5: "electronics"
+        self._foot_idxs = [self.robot.find_bodies("lfoot")[0][0], self.robot.find_bodies("rfoot")[0][0]]
+        self._l_foot_idxs = self.robot.find_bodies("lfoot")[0]  # v6.5: "l_foot_pad"
+        self._r_foot_idxs = self.robot.find_bodies("rfoot")[0]
 
         # Asset data is a ProxyArray in 3.x; ``.torch`` is a zero-copy torch view.
         self.joint_pos = self.robot.data.joint_pos.torch
@@ -89,39 +74,42 @@ class ChickenEnv(DirectRLEnv):
         self.target_horiz_vel = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
         self.target_yaw_rate = torch.zeros((self.num_envs, 1), device=self.device, dtype=torch.float32)
 
-        self.min_target_vel = -1.25
-        self.max_target_vel = 1.25
-        self.min_target_horiz_vel = -1
-        self.max_target_horiz_vel = 1
-        self.min_target_yaw_rate = -torch.pi
-        self.max_target_yaw_rate = torch.pi
+        self.min_target_vel = -0.8
+        self.max_target_vel = 0.8
+        self.min_target_horiz_vel = -0.5
+        self.max_target_horiz_vel = 0.5
+        self.min_target_yaw_rate = -torch.pi / 1.5
+        self.max_target_yaw_rate = torch.pi / 1.5
 
-        self.min_freq = 2.0
-        self.max_freq = 3.5
+        if self.nowalk:
+            self.min_target_vel = 0.0
+            self.max_target_vel = 0.0
+            self.min_target_horiz_vel = 0.0
+            self.max_target_horiz_vel = 0.0
+            self.min_target_yaw_rate = 0.0
+            self.max_target_yaw_rate = 0.0
 
-        self.target_height = 0.48
-        # self.sway_amplitude = 0.25
+        self.min_freq = 1.3
+        self.max_freq = 2.2
+
+        self.target_height = 0.59
 
         self.current_pos = torch.zeros((self.num_envs, 3), device=self.device)
         self.yaw = torch.zeros((self.num_envs,), device=self.device)
         self.lin_vel_w = torch.zeros((self.num_envs, 3), device=self.device)
 
-        self.last_action = torch.zeros((self.num_envs, 8), device=self.device)
-        self.last_last_action = torch.zeros((self.num_envs, 8), device=self.device)
+        self.last_action = torch.zeros((self.num_envs, self.cfg.action_space), device=self.device)
+        self.last_last_action = torch.zeros((self.num_envs, self.cfg.action_space), device=self.device)
 
         self.history = torch.zeros(
             (self.num_envs, self.cfg.history_length * self.cfg.history_interval, self.cfg.history_size),
             device=self.device,
         )
 
-        self.timing_ref = torch.zeros(
-            (self.num_envs, 2), device=self.device
-        )  # [tl, tr], expressed in obs as sin(2pitl) etc
+        self.timing_ref = torch.zeros((self.num_envs, 2), device=self.device)  # [tl, tr], expressed in obs as sin(2pitl) etc
         # goes between 0 and 1 at frequency desired to walk
         self.freq = torch.zeros((self.num_envs,), device=self.device)
-        self.foot_offsets = torch.tensor(
-            [[0.0, 0.5], [0.0, 0.4], [0.0, 0.3], [0.0, 0.25], [0.0, 0.6], [0.0, 0.7], [0.0, 0.75]], device=self.device
-        )
+        self.foot_offsets = torch.tensor([[0.0, 0.5], [0.0, 0.4], [0.0, 0.3], [0.0, 0.25], [0.0, 0.6], [0.0, 0.7], [0.0, 0.75]], device=self.device)
 
         # target_bodies = self._body_idxs
         # num_bodies = len(target_bodies)
@@ -171,7 +159,10 @@ class ChickenEnv(DirectRLEnv):
         # sim_utils.spawn_rigid_body_material("/World/gripmat", physics_material)
         # sim_utils.bind_physics_material("/World/ground", "/World/gripmat")
 
-        force_mag = 50.0 + 200.0 * (min(max(self.sim_step_counter - 20000, 0.0), 20000.0) / 5000.0)
+        force_mag = 80.0
+        if self.nowalk:
+            force_mag = 225.0
+        # force_mag = 125.0 + 75.0 * (min(max(self.sim_step_counter - 20000, 0.0), 20000.0) / 5000.0)
         target_bodies = self._body_idxs
         num_bodies = len(target_bodies)
 
@@ -180,9 +171,7 @@ class ChickenEnv(DirectRLEnv):
 
         if force_idxs.any():
             forces = torch.zeros((self.num_envs, num_bodies, 3), device=self.device)
-            forces[force_idxs] = sample_uniform(
-                -force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device
-            )
+            forces[force_idxs] = sample_uniform(-force_mag, force_mag, (force_idxs.sum(), num_bodies, 3), device=self.device)
             #     self.force_time[force_idxs] = torch.round(
             #         sample_uniform(1, 3, (force_idxs.sum(), num_bodies, 3), device=self.device)
             #     )
@@ -191,9 +180,7 @@ class ChickenEnv(DirectRLEnv):
 
             # self.forces = self.forces * (self.force_time >= 0)
 
-            self.robot.instantaneous_wrench_composer.set_forces_and_torques_index(
-                forces=forces, torques=torques, body_ids=target_bodies
-            )
+            self.robot.instantaneous_wrench_composer.set_forces_and_torques_index(forces=forces, torques=torques, body_ids=target_bodies)
 
         if not getattr(self, "is_teleop", False):
             update_random_idxs = torch.rand(self.num_envs, device=self.device) < 1.0 / (120.0 * 10.0)
@@ -220,18 +207,18 @@ class ChickenEnv(DirectRLEnv):
                 )
 
         # update time
-        self.timing_ref = self.timing_ref + self.freq.unsqueeze(1) * 1.0 / 120.0 * self.cfg.decimation
+        self.timing_ref = self.timing_ref + self.freq.unsqueeze(1) * 1.0 / 100.0 * self.cfg.decimation
         self.timing_ref = torch.fmod(self.timing_ref, 1.0)
 
         self.lin_vel_w = self.robot.data.body_com_lin_vel_w.torch[:, self._body_idxs, :].flatten(start_dim=-2)
         self.current_pos = self.robot.data.body_com_pos_w.torch[:, self._body_idxs, :].squeeze(1)
 
     def _apply_action(self) -> None:
-        # apply joint actions (limits are already (num_envs, 8) with the flat joint index lists)
+        # apply joint actions (limits are already (num_envs, num_joints) with the flat joint index lists)
         action_range = self.upper_limits - self.lower_limits
         action_midpoint = (self.upper_limits + self.lower_limits) / 2.0
 
-        scaled_actions = self.actions[:, :8] * action_range / 2.0 + action_midpoint
+        scaled_actions = self.actions * action_range / 2.0 + action_midpoint
         # 2.x: robot.set_joint_position_target(...)
         self.robot.actuators.target_command.set_position_index(value=scaled_actions, joint_ids=self._all_joint_dof_idxs)
 
@@ -263,6 +250,22 @@ class ChickenEnv(DirectRLEnv):
             self.target_horiz_vel,
             self.target_yaw_rate,
         )
+
+        if self.nowalk:
+            obs_data = (
+                self.joint_vel[:, self._l_joint_dof_idxs],
+                self.joint_vel[:, self._r_joint_dof_idxs],
+                self._sin_cos(self.joint_pos[:, self._l_joint_dof_idxs]),
+                self._sin_cos(self.joint_pos[:, self._r_joint_dof_idxs]),
+                # self._sin_cos(2.0 * torch.pi * (self.timing_ref)),
+                torch.zeros((self.num_envs, 4), device=self.device),  # instead of timing ref
+                self.imu.data.projected_gravity_b.torch,
+                self.imu.data.ang_vel_b.torch,
+                self.target_vel,
+                self.target_horiz_vel,
+                self.target_yaw_rate,
+            )
+
         obs_data = [t.unsqueeze(-1) if t.dim() == 1 else t for t in obs_data]
 
         obs = torch.cat(
@@ -289,13 +292,9 @@ class ChickenEnv(DirectRLEnv):
         target_vel_x = target_vel * torch.cos(yaw + torch.pi / 2.0) + target_horiz_vel * torch.cos(yaw)
         target_vel_y = target_vel * torch.sin(yaw + torch.pi / 2.0) + target_horiz_vel * torch.sin(yaw)
 
-        vel_mse = (
-            torch.square(self.lin_vel_w[:, 0] - target_vel_x) + torch.square(self.lin_vel_w[:, 1] - target_vel_y)
-        ) / 2.0
+        vel_mse = (torch.square(self.lin_vel_w[:, 0] - target_vel_x) + torch.square(self.lin_vel_w[:, 1] - target_vel_y)) / 2.0
 
-        yaw_rate = self.robot.data.body_com_ang_vel_w.torch[:, self._body_idxs, 2].flatten(
-            start_dim=-2
-        )  # z-axis = yaw rate, rad/s
+        yaw_rate = self.robot.data.body_com_ang_vel_w.torch[:, self._body_idxs, 2].flatten(start_dim=-2)  # z-axis = yaw rate, rad/s
 
         z_vel = self.lin_vel_w[:, 2]
 
@@ -355,29 +354,35 @@ class ChickenEnv(DirectRLEnv):
             .any(dim=-1)
         )
 
+        cmd_speed = torch.norm(torch.stack([target_vel_x, target_vel_y], dim=-1), dim=-1)
+        moving = torch.clamp((cmd_speed + 0.2 * target_yaw_rate.abs()) / 0.2, 0.0, 1.0)
+
+        # print(height.mean().item() - self.target_height)
+
         rewards = [
             # task
-            torch.exp(-6.0 * vel_mse) * 35,  # 0
-            torch.exp(-0.4 * torch.square(yaw_rate - target_yaw_rate)) * 20,  # 1
+            torch.exp(-12.0 * vel_mse) * 12.5,  # 0
+            torch.exp(-2.0 * torch.square(yaw_rate - target_yaw_rate)) * 9.5,  # 1
             torch.exp(-2.0 * torch.square(z_vel)) * 1.5,  # 2
-            torch.exp(-0.2 * torch.square(ang_vel)) * 1.5,  # 3
-            torch.exp(-4.0 * torch.square(pitch) - torch.square(roll)) * 2,  # 4
-            torch.exp(-50.0 * torch.square(height - self.target_height)) * 5,  # 5
+            torch.exp(-2.0 * torch.square(ang_vel)) * 1.5,  # 3
+            torch.exp(-3.0 * torch.square(pitch) - 2.0 * torch.square(roll)) * 3,  # 4
+            torch.exp(-45.0 * torch.square(height - self.target_height)) * 3,  # 5
             # gait height?
-            # contact
-            (1.0 - torch.abs(should_down_l - contact_weight_l)) * 3,  # 6
-            (1.0 - torch.abs(should_down_r - contact_weight_r)) * 3,  # 7
             # reg
-            feet_slip * -2.5,  # 8
-            torch.sum(torch.square(joint_torques), dim=1).flatten() * -2e-2,  # 9
+            torch.sum(torch.square(joint_torques), dim=1).flatten() * -1e-3,  # 9
             torch.sum(torch.square(joint_acc), dim=1).flatten() * -1e-5,  # 10
-            torch.sum(torch.square(joint_vels), dim=1).flatten() * -1e-3,  # 11
-            torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.3,  # 12
-            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.06,  # 13
-            torch.any(joint_limit_violation, dim=-1) * -15.0,  # 14
-            self.touching_ground * -7.5,  # 15
+            torch.sum(torch.square(joint_vels), dim=1).flatten() * -1.5e-4,  # 11
+            torch.sum(torch.square(self.last_action - self.actions), dim=-1) * -0.1,  # 12
+            torch.sum(torch.square(self.last_last_action - 2 * self.last_action + self.actions), dim=-1) * -0.25,  # 13
+            torch.any(joint_limit_violation, dim=-1) * -10.0,  # 14
+            self.touching_ground * -5.0,  # 15
             torch.ones(self.num_envs, device=self.device) * 5.0,  # 16
         ]
+
+        if not self.nowalk:
+            rewards.append((1.0 - torch.abs(should_down_l - contact_weight_l)) * 2)
+            rewards.append((1.0 - torch.abs(should_down_r - contact_weight_r)) * 2)
+            rewards.append(feet_slip * -0.5)
 
         if self.sim_step_counter % 500 == 0 and not self.is_teleop:
             print("  ")
@@ -414,9 +419,12 @@ class ChickenEnv(DirectRLEnv):
 
         too_high = torch.abs(body_pos_z) > 3.5
 
-        out_of_bounds = too_fast | too_high | (self.touching_ground != 0)
-        # out_of_bounds = too_fast | too_high | ((self.touching_ground != 0) & (self.episode_length_buf > 70))
         # out_of_bounds = too_fast | too_high
+        # out_of_bounds = too_fast | too_high | (self.touching_ground != 0)
+        if self.sim_step_counter > 20000:
+            out_of_bounds = too_fast | too_high | ((self.touching_ground != 0) & (self.episode_length_buf > 80))
+        else:
+            out_of_bounds = too_fast | too_high | ((self.touching_ground != 0) & (self.episode_length_buf > 40))
         # out_of_bounds = out_of_bounds & (self.episode_length_buf > 4)
         # out_of_bounds = out_of_bounds * (1.0 - min(max(self.sim_step_counter - 20000, 0.0), 5000.0) / 5000.0)
 
@@ -424,9 +432,7 @@ class ChickenEnv(DirectRLEnv):
             return out_of_bounds, time_out
 
         # apply normal return for first 40 steps of episode_length_buf
-        return out_of_bounds * (self.episode_length_buf < 60), torch.zeros(
-            self.num_envs, dtype=torch.bool, device=self.device
-        )
+        return out_of_bounds * (self.episode_length_buf < 60), torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
 
     def _reset_idx(self, env_ids: Sequence[int] | None):
 
@@ -451,19 +457,16 @@ class ChickenEnv(DirectRLEnv):
 
         self.freq[env_ids] = sample_uniform(self.min_freq, self.max_freq, (env_ids_len,), device=self.device)
         # self.timing_ref[env_ids] = self.foot_offsets[torch.randint(0, 7, (env_ids_len,), device=self.device)]
-        self.timing_ref[env_ids] = self.foot_offsets[0]
+        self.timing_ref[env_ids] = torch.fmod(self.foot_offsets[0] + torch.rand((env_ids_len, 1), device=self.device), 1.0)
 
         self.joint_pos[env_ids] = joint_pos
         self.joint_vel[env_ids] = joint_vel
 
         # if False:
         # if self.sim_step_counter < 5000:
-        random_rotation_roll = sample_uniform(
-            -torch.pi * 10.0 / 180.0, torch.pi * 10.0 / 180.0, (env_ids_len, 1), device=self.device
-        )  # type: ignore
-        random_rotation_pitch = sample_uniform(
-            -torch.pi * 10.0 / 180.0, torch.pi * 10.0 / 180.0, (env_ids_len, 1), device=self.device
-        )  # type: ignore
+        angle = 25
+        random_rotation_roll = sample_uniform(-torch.pi * angle / 180.0, torch.pi * angle / 180.0, (env_ids_len, 1), device=self.device)  # type: ignore
+        random_rotation_pitch = sample_uniform(-torch.pi * angle / 180.0, torch.pi * angle / 180.0, (env_ids_len, 1), device=self.device)  # type: ignore
         # else:
         #     random_rotation_roll = sample_uniform(
         #         -torch.pi * 40.0 / 180.0, torch.pi * 40.0 / 180.0, (env_ids_len, 1), device=self.device

@@ -4,9 +4,12 @@
 
 Click the viewer window so it has keyboard focus, then:
 
-- Arrow Up / Down (or numpad 8 / 2): walk forward / backward
-- Arrow Left / Right (or numpad 4 / 6): side-step left / right
-- Z / X (or numpad 7 / 9): turn left / right
+- I / K (or numpad 8 / 2): walk forward / backward
+- J / L (or numpad 4 / 6): side-step left / right
+- U / O (or numpad 7 / 9): turn left / right
+- R: reset the robots
+
+The newton_gl viewer moves the camera with WASD, the arrow keys and Q/E, so driving uses other keys.
 
 Commands ramp toward the held keys rather than jumping, as in the 2.x script. While teleop is on, the
 environment ignores its random velocity commands and episodes don't time out; a robot is only reset if
@@ -29,11 +32,11 @@ from isaaclab_tasks.utils import setup_preset_cli
 parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
 add_common_play_args(parser, agent_default=None, agent_help="Agent configuration entry point.")
 parser.add_argument("--checkpoint", type=str, default="latest", help="'latest', 'best', or a checkpoint path.")
-parser.add_argument("--v_x_sensitivity", type=float, default=1.2, help="Forward/backward speed at full key [m/s].")
-parser.add_argument("--v_y_sensitivity", type=float, default=1.2, help="Side-step speed at full key [m/s].")
-parser.add_argument("--yaw_sensitivity", type=float, default=3.14159, help="Turn rate at full key [rad/s].")
+parser.add_argument("--v_x_sensitivity", type=float, default=0.5, help="Forward/backward speed at full key [m/s].")
+parser.add_argument("--v_y_sensitivity", type=float, default=0.5, help="Side-step speed at full key [m/s].")
+parser.add_argument("--yaw_sensitivity", type=float, default=2.0, help="Turn rate at full key [rad/s].")
 parser.add_argument("--smoothing", type=float, default=0.2, help="Fraction of the way to the target per step.")
-parser.add_argument("--step_frequency", type=float, default=2.0, help="Gait frequency passed to the env [Hz].")
+parser.add_argument("--step_frequency", type=float, default=1.8, help="Gait frequency passed to the env [Hz].")
 cli_args_skrl.add_skrl_args(parser)
 add_launcher_args(parser)
 args_cli, hydra_args = setup_preset_cli(parser, sys.argv[1:])
@@ -63,21 +66,23 @@ import chicken.tasks  # noqa: E402, F401
 
 logger = logging.getLogger(__name__)
 
-# W3C key codes reported by the viewer window -> (command index, sign), matching 2.x Se2Keyboard.
+# W3C key codes reported by the viewer window -> (command index, sign). The numpad layout matches 2.x
+# Se2Keyboard; the letter keys avoid the newton_gl camera keys (WASD, arrows, Q/E) and its Space/H/F/Esc.
 KEY_BINDINGS = {
-    "ArrowUp": (0, +1.0),
+    "KeyI": (0, +1.0),
     "Numpad8": (0, +1.0),
-    "ArrowDown": (0, -1.0),
+    "KeyK": (0, -1.0),
     "Numpad2": (0, -1.0),
-    "ArrowLeft": (1, +1.0),
+    "KeyJ": (1, +1.0),
     "Numpad4": (1, +1.0),
-    "ArrowRight": (1, -1.0),
+    "KeyL": (1, -1.0),
     "Numpad6": (1, -1.0),
-    "KeyZ": (2, +1.0),
+    "KeyU": (2, +1.0),
     "Numpad7": (2, +1.0),
-    "KeyX": (2, -1.0),
+    "KeyO": (2, -1.0),
     "Numpad9": (2, -1.0),
 }
+RESET_KEY = "KeyR"
 
 
 class Keyboard:
@@ -85,6 +90,7 @@ class Keyboard:
 
     def __init__(self, visualizers):
         self.held: set[str] = set()
+        self.reset_requested = False
         self.subscriptions = []
         for visualizer in visualizers:
             source = visualizer.key_event_source
@@ -94,7 +100,9 @@ class Keyboard:
             logger.warning("No visualizer window reports keys. Run with --viz newton_gl to drive the robot.")
 
     def _on_key(self, code: str, pressed: bool) -> None:
-        if code in KEY_BINDINGS:
+        if code == RESET_KEY and pressed:
+            self.reset_requested = True
+        elif code in KEY_BINDINGS:
             (self.held.add if pressed else self.held.discard)(code)
 
     def command(self) -> tuple[float, float, float]:
@@ -161,7 +169,7 @@ def main():
 
         keyboard = Keyboard(chicken.sim.visualizers)
         cleanup.callback(keyboard.close)
-        print("[control] Click the viewer window, then: arrows to walk/side-step, Z/X to turn.")
+        print("[control] Click the viewer window, then: I/K walk, J/L side-step, U/O turn, R reset.")
 
         obs, _ = env.reset()
         states = env.state()
@@ -169,6 +177,14 @@ def main():
 
         def step() -> None:
             nonlocal obs, states, v_x, v_y, yaw_rate
+            if keyboard.reset_requested:
+                keyboard.reset_requested = False
+                # skrl's wrapper only resets the env on its first reset() call and returns cached
+                # observations after that, so re-arm it.
+                env._reset_once = True
+                obs, _ = env.reset()
+                states = env.state()
+                v_x = v_y = yaw_rate = 0.0
             cmd = keyboard.command()
             t = args_cli.smoothing
             # The chicken env's forward command is negative target_vel (as in the 2.x control script).
