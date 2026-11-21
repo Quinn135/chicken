@@ -22,7 +22,7 @@ from isaaclab_physx.physics import PhysxCfg
 from isaaclab_tasks.utils import PresetCfg
 
 from chicken.assets import CHICKEN_ASSETS_DIR
-from chicken.assets.chicken import CHICKEN_BODY_PATHS, CHICKEN_CFG
+from chicken.assets.chicken import CHICKEN_BODY_PATHS, CHICKEN_CFG, CHICKEN_JOINTS
 
 # uv run isaaclab train --rl_library skrl --task Chicken-Walk-Direct --num_envs 4096
 # uv run isaaclab play --rl_library skrl --task Chicken-Walk-Direct --num_envs 9 --checkpoint latest --viz newton_gl
@@ -30,36 +30,31 @@ from chicken.assets.chicken import CHICKEN_BODY_PATHS, CHICKEN_CFG
 
 ROBOT = "{ENV_REGEX_NS}/Robot"
 
-# Bodies whose contact with anything ends the episode (the 2.x ``contact_cfgs`` dict: key -> link name).
+# Bodies whose contact with anything ends the episode (key -> link name). Same set as v6.5 under the v7
+# link names; the feet are left out because lfoot/rfoot are the contact pads now. v7 has no ESC mounts.
 GROUND_CONTACT_BODIES = {
     "l_knee": "lm_knee",
     "r_knee": "rm_knee",
-    "l_foot": "l_foot",
-    "r_foot": "r_foot",
-    "l_leg": "l_upper_leg",
-    "r_leg": "r_upper_leg",
-    "l_lowerleg": "l_lower_leg",
-    "r_lowerleg": "r_lower_leg",
+    "l_leg": "llegtop",
+    "r_leg": "rlegtop",
+    "l_lowerleg": "llegbottom",
+    "r_lowerleg": "rlegbottom",
     "lm_hip": "lm_hip",
     "rm_hip": "rm_hip",
     "lm_side_hip": "lm_side_hip",
     "rm_side_hip": "rm_side_hip",
     "lm_ankle": "lm_ankle",
     "rm_ankle": "rm_ankle",
-    "l_hip": "l_hip",
-    "r_hip": "r_hip",
-    "base": "base",
-    "box": "bodybox",
-    "batf": "batfront",
-    "batb": "batback",
-    "esc0": "escmountcenter",
-    "esc1": "escmountcenter_1",
-    "esc2": "escmountcenter_2",
-    "esc3": "escmountcenter_3",
-    "esc4": "escmountcenter_4",
-    "esc5": "escmountcenter_5",
-    "esc6": "escmountcenter_6",
-    "esc7": "escmountcenter_7",
+    "l_hip": "lhip",
+    "r_hip": "rhip",
+    "l_hipframe": "lhipframe",
+    "r_hipframe": "rhipframe",
+    "lm_hip_turn": "lm_hip_turn",
+    "rm_hip_turn": "rm_hip_turn",
+    "body": "hip",
+    "battery": "battery",
+    "imu": "imu",
+    "stm32": "stm32",
 }
 
 
@@ -105,10 +100,10 @@ class ChickenSceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = replace(CHICKEN_CFG, prim_path=ROBOT)
 
     # 2.x ``Imu`` was a full-state sensor; its 3.x equivalent is ``Pva``.
-    imu = PvaCfg(prim_path=body_path("electronics"))
+    imu = PvaCfg(prim_path=body_path("imu"))
 
-    contact_l = ContactSensorCfg(prim_path=body_path("l_foot_pad"), update_period=0.0, track_air_time=True)
-    contact_r = ContactSensorCfg(prim_path=body_path("r_foot_pad"), update_period=0.0, track_air_time=True)
+    contact_l = ContactSensorCfg(prim_path=body_path("lfoot"), update_period=0.0, track_air_time=True)
+    contact_r = ContactSensorCfg(prim_path=body_path("rfoot"), update_period=0.0, track_air_time=True)
 
     # Quaternions are (x, y, z, w) in 3.x; 2.x used (w, x, y, z).
     distant_light = AssetBaseCfg(
@@ -131,30 +126,31 @@ class ChickenSceneCfg(InteractiveSceneCfg):
 @configclass
 class ChickenEnvCfg(DirectRLEnvCfg):
     # env
-    num_envs = 1
+    # num_envs = 1
     # num_envs = 2
     # num_envs = 9
     # num_envs = 64
     # num_envs = 1024
-    # num_envs = 4096
+    num_envs = 4096
 
     spawn_size = 5
 
     decimation = 2
-    episode_length_s = 15
-    action_space = 8  # command 8 motor positions
+    episode_length_s = 8
+    action_space = len(CHICKEN_JOINTS)  # one position target per motor
 
     history_length = 15
     history_interval = 1
 
-    original_observation_space = 8 + 8 * 2 + 4 + 3 + 3 + 3
+    # joint velocities + sin/cos of joint angles + sin/cos of the 2 gait phases + gravity + ang vel + 3 commands
+    original_observation_space = len(CHICKEN_JOINTS) * 3 + 4 + 3 + 3 + 3
     history_size = original_observation_space + action_space
     observation_space = original_observation_space + history_length // history_interval * history_size
 
     state_space = 0
 
     # simulation
-    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation, physics=ChickenPhysicsCfg())
+    sim: SimulationCfg = SimulationCfg(dt=1 / 100, render_interval=decimation, physics=ChickenPhysicsCfg())
 
     # order:
     # "side_hip"
@@ -165,7 +161,7 @@ class ChickenEnvCfg(DirectRLEnvCfg):
     # scene
     scene: ChickenSceneCfg = ChickenSceneCfg(
         num_envs=num_envs,
-        env_spacing=spawn_size / math.sqrt(num_envs),
+        env_spacing=spawn_size / math.sqrt(num_envs),  # recomputed from the actual num_envs in ChickenEnv
         replicate_physics=True,
         lazy_sensor_update=True,
         filter_collisions=True,

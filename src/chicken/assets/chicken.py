@@ -15,46 +15,46 @@ from . import CHICKEN_ASSETS_DIR
 # Configuration
 ##
 
-# Generated from robots/chicken_v6_5/urdf/chicken.urdf by scripts/convert_robot.py.
+# Generated from robots/chicken_v4/urdf/chicken_v4.urdf by scripts/convert_robot.py.
 # (In 2.x this conversion re-ran on every import; now it is a one-off step.)
-CHICKEN_USD_PATH = CHICKEN_ASSETS_DIR / "robots" / "usd" / "chicken" / "chicken.usda"
+CHICKEN_USD_PATH = CHICKEN_ASSETS_DIR / "robots" / "usd" / "chicken_v4_9" / "chicken_v4.usda"
 
 # The 3.x URDF importer nests each link under its parent link (2.x put every link directly under the
 # robot prim), so sensors need each link's full path. Paths are relative to the robot prim.
 # Regenerate this table if the URDF's link tree changes.
 CHICKEN_BODY_PATHS = {
-    "base": "Geometry/root/base",
-    "rm_side_hip": "Geometry/root/base/rm_side_hip",
-    "r_hip": "Geometry/root/base/rm_side_hip/r_hip",
-    "rm_hip": "Geometry/root/base/rm_side_hip/r_hip/rm_hip",
-    "r_upper_leg": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg",
-    "rm_knee": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee",
-    "r_lower_leg": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee/r_lower_leg",
-    "rm_ankle": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee/r_lower_leg/rm_ankle",
-    "r_foot": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee/r_lower_leg/rm_ankle/r_foot",
-    "r_foot_pad": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee/r_lower_leg/rm_ankle/r_foot/r_foot_pad",  # noqa: E501
-    "escmountcenter_7": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee/r_lower_leg/rm_ankle/escmountcenter_7",  # noqa: E501
-    "escmountcenter_5": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/r_upper_leg/rm_knee/escmountcenter_5",
-    "escmountcenter_6": "Geometry/root/base/rm_side_hip/r_hip/rm_hip/escmountcenter_6",
-    "escmountcenter_4": "Geometry/root/base/rm_side_hip/escmountcenter_4",
-    "lm_side_hip": "Geometry/root/base/lm_side_hip",
-    "l_hip": "Geometry/root/base/lm_side_hip/l_hip",
-    "lm_hip": "Geometry/root/base/lm_side_hip/l_hip/lm_hip",
-    "l_upper_leg": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg",
-    "lm_knee": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee",
-    "l_lower_leg": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee/l_lower_leg",
-    "lm_ankle": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee/l_lower_leg/lm_ankle",
-    "l_foot": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee/l_lower_leg/lm_ankle/l_foot",
-    "l_foot_pad": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee/l_lower_leg/lm_ankle/l_foot/l_foot_pad",  # noqa: E501
-    "escmountcenter_2": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee/l_lower_leg/lm_ankle/escmountcenter_2",  # noqa: E501
-    "escmountcenter": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/l_upper_leg/lm_knee/escmountcenter",
-    "escmountcenter_3": "Geometry/root/base/lm_side_hip/l_hip/lm_hip/escmountcenter_3",
-    "escmountcenter_1": "Geometry/root/base/lm_side_hip/escmountcenter_1",
-    "bodybox": "Geometry/root/base/bodybox",
-    "batfront": "Geometry/root/base/bodybox/batfront",
-    "batback": "Geometry/root/base/bodybox/batback",
-    "electronics": "Geometry/root/base/bodybox/electronics",
+    "hip": "Geometry/root/hip",  # body; articulation root
+    "battery": "Geometry/root/hip/battery",
+    "imu": "Geometry/root/hip/imu",
+    "stm32": "Geometry/root/hip/stm32",
+    "rm_side_hip": "Geometry/root/hip/rm_side_hip",
+    "rhipframe": "Geometry/root/hip/rm_side_hip/rhipframe",
+    "rm_hip_turn": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn",
+    "rhip": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip",
+    "rm_hip": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip/rm_hip",
+    "rlegtop": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip/rm_hip/rlegtop",
+    "rm_knee": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip/rm_hip/rlegtop/rm_knee",
+    "rlegbottom": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip/rm_hip/rlegtop/rm_knee/rlegbottom",
+    "rm_ankle": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip/rm_hip/rlegtop/rm_knee/rlegbottom/rm_ankle",
+    "rfoot": "Geometry/root/hip/rm_side_hip/rhipframe/rm_hip_turn/rhip/rm_hip/rlegtop/rm_knee/rlegbottom/rm_ankle"
+    "/rfoot",
+    "lm_side_hip": "Geometry/root/hip/lm_side_hip",
+    "lhipframe": "Geometry/root/hip/lm_side_hip/lhipframe",
+    "lm_hip_turn": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn",
+    "lhip": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip",
+    "lm_hip": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip/lm_hip",
+    "llegtop": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip/lm_hip/llegtop",
+    "lm_knee": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip/lm_hip/llegtop/lm_knee",
+    "llegbottom": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip/lm_hip/llegtop/lm_knee/llegbottom",
+    "lm_ankle": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip/lm_hip/llegtop/lm_knee/llegbottom/lm_ankle",
+    "lfoot": "Geometry/root/hip/lm_side_hip/lhipframe/lm_hip_turn/lhip/lm_hip/llegtop/lm_knee/llegbottom/lm_ankle"
+    "/lfoot",
 }
+
+# Actuated joints, in the env's action order: the left leg, then the right leg, with the same joints in the
+# same order in each half (the env splits this list in two). Turn hip = hip yaw. The ankle joints are named
+# after the feet they move. (v6.5 had 8: l_side_hip, l_hip, l_knee, l_ankle, r_...)
+CHICKEN_JOINTS = ["lturnhip", "lsidehip", "lhip", "lknee", "lfoot", "rturnhip", "rsidehip", "rhip", "rknee", "rfoot"]
 
 CHICKEN_CFG = ArticulationCfg(
     spawn=sim_utils.UsdFileCfg(
@@ -80,35 +80,25 @@ CHICKEN_CFG = ArticulationCfg(
         activate_contact_sensors=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        # 2.x used (0, 0, 0.02) for the URDF's empty "root" link. The 3.x importer drops that link and
-        # makes "base" the articulation root, so add the root->base offset from fixed_node_to_root_joint
-        # (0.0623, 0.0075, 0.1262) to spawn the robot in the same place.
-        pos=(0.0623, 0.00748735, 0.02 + 0.126153),
-        joint_pos={
-            "l_side_hip": 0.0,
-            "l_hip": 0.0,
-            "l_knee": 0.0,
-            "l_ankle": 0.0,
-            "r_side_hip": 0.0,
-            "r_hip": 0.0,
-            "r_knee": 0.0,
-            "r_ankle": 0.0,
-        },
+        # The root body ("hip") sits at the URDF origin and the bottoms of the feet are 0.388 m below it with
+        # straight legs. 0.376 puts the feet ~1 cm above the terrain (z = -0.02 at the spawn points).
+        pos=(0.0, 0.0, 0.376),
+        joint_pos=dict.fromkeys(CHICKEN_JOINTS, 0.0),
     ),
     actuators={
         "motor_actuator": DelayedPDActuatorCfg(
-            joint_names_expr=["r_.*", "l_.*"],
+            joint_names_expr=CHICKEN_JOINTS,
             min_delay=1,
             max_delay=2,
             # 2.x names: effort_limit, effort_limit_sim, velocity_limit, velocity_limit_sim
-            actuator_effort_limit=12.0,
+            actuator_effort_limit=13.0,
             joint_effort_limit=15.0,
             actuator_velocity_limit=30.0,
             joint_velocity_limit=35.0,
             stiffness=20.0,
             damping=0.5,
-            armature=0.01,
-            friction=0.02,
+            armature=0.15,
+            friction=0.07,
             dynamic_friction=0.01,
             viscous_friction=0.02,
         ),
